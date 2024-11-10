@@ -2,6 +2,7 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.NotificacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.NotificacaoResponseDTO;
+import br.com.fiap.jadv.prospeco.kafka.KafkaNotificacaoProducer;
 import br.com.fiap.jadv.prospeco.model.Notificacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.NotificacaoRepository;
@@ -15,24 +16,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * <h1>NotificacaoService</h1>
- * Classe de serviço responsável pela gestão das notificações dos usuários,
- * incluindo criação, consulta e atualização do status de leitura.
- */
 @Service
 @RequiredArgsConstructor
 public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final KafkaNotificacaoProducer kafkaNotificacaoProducer;
 
-    /**
-     * Cria uma nova notificação para um usuário específico.
-     *
-     * @param notificacaoRequestDTO DTO contendo os dados da notificação.
-     * @return DTO de resposta contendo os dados da notificação criada.
-     */
     @Transactional
     public NotificacaoResponseDTO criarNotificacao(NotificacaoRequestDTO notificacaoRequestDTO) {
         Usuario usuario = usuarioRepository.findById(notificacaoRequestDTO.getUsuarioId())
@@ -46,6 +37,10 @@ public class NotificacaoService {
                 .build();
 
         Notificacao notificacaoSalva = notificacaoRepository.save(notificacao);
+
+        // Envia a notificação para o Kafka
+        kafkaNotificacaoProducer.enviarNotificacao(notificacaoRequestDTO);
+
         return mapToNotificacaoResponseDTO(notificacaoSalva);
     }
 

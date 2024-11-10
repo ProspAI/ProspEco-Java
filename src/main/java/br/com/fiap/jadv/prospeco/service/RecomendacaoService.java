@@ -1,6 +1,7 @@
 package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.response.RecomendacaoResponseDTO;
+import br.com.fiap.jadv.prospeco.kafka.KafkaRecomendacaoProducer;
 import br.com.fiap.jadv.prospeco.model.Recomendacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.RecomendacaoRepository;
@@ -14,25 +15,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * <h1>RecomendacaoService</h1>
- * Classe de serviço responsável pela gestão das recomendações de consumo geradas para os usuários,
- * incluindo criação, consulta e atualização.
- */
 @Service
 @RequiredArgsConstructor
 public class RecomendacaoService {
 
     private final RecomendacaoRepository recomendacaoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final KafkaRecomendacaoProducer kafkaRecomendacaoProducer;
 
-    /**
-     * Cria uma nova recomendação para um usuário específico.
-     *
-     * @param usuarioId ID do usuário.
-     * @param mensagem Mensagem da recomendação gerada.
-     * @return DTO de resposta contendo os dados da recomendação criada.
-     */
     @Transactional
     public RecomendacaoResponseDTO criarRecomendacao(Long usuarioId, String mensagem) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -45,10 +35,15 @@ public class RecomendacaoService {
                 .build();
 
         Recomendacao recomendacaoSalva = recomendacaoRepository.save(recomendacao);
-        return mapToRecomendacaoResponseDTO(recomendacaoSalva);
+
+        // Enviar recomendação para o Kafka
+        RecomendacaoResponseDTO recomendacaoResponseDTO = mapToRecomendacaoResponseDTO(recomendacaoSalva);
+        kafkaRecomendacaoProducer.enviarRecomendacao(recomendacaoResponseDTO);
+
+        return recomendacaoResponseDTO;
     }
 
-    /**
+/**
      * Busca todas as recomendações de um usuário específico.
      *
      * @param usuarioId ID do usuário.

@@ -2,6 +2,7 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.RegistroConsumoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.RegistroConsumoResponseDTO;
+import br.com.fiap.jadv.prospeco.kafka.KafkaRegistroConsumoProducer;
 import br.com.fiap.jadv.prospeco.model.Aparelho;
 import br.com.fiap.jadv.prospeco.model.RegistroConsumo;
 import br.com.fiap.jadv.prospeco.repository.AparelhoRepository;
@@ -13,27 +14,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-/**
- * <h1>RegistroConsumoService</h1>
- * Classe de serviço responsável pelo gerenciamento dos registros de consumo dos aparelhos,
- * como criação, consulta e exclusão, com suporte a paginação.
- */
 @Service
 @RequiredArgsConstructor
 public class RegistroConsumoService {
 
     private final RegistroConsumoRepository registroConsumoRepository;
     private final AparelhoRepository aparelhoRepository;
+    private final KafkaRegistroConsumoProducer kafkaRegistroConsumoProducer;
 
-    /**
-     * Cria um novo registro de consumo para um aparelho específico.
-     *
-     * @param registroConsumoRequestDTO DTO contendo os dados do registro de consumo.
-     * @return DTO de resposta contendo os dados do registro de consumo criado.
-     */
     @Transactional
     public RegistroConsumoResponseDTO criarRegistroConsumo(RegistroConsumoRequestDTO registroConsumoRequestDTO) {
         Aparelho aparelho = aparelhoRepository.findById(registroConsumoRequestDTO.getAparelhoId())
@@ -46,9 +34,13 @@ public class RegistroConsumoService {
                 .build();
 
         RegistroConsumo registroSalvo = registroConsumoRepository.save(registroConsumo);
-        return mapToRegistroConsumoResponseDTO(registroSalvo);
-    }
 
+        // Envia o registro de consumo para o Kafka
+        RegistroConsumoResponseDTO responseDTO = mapToRegistroConsumoResponseDTO(registroSalvo);
+        kafkaRegistroConsumoProducer.enviarRegistroConsumo(responseDTO);
+
+        return responseDTO;
+    }
     /**
      * Busca os registros de consumo de um aparelho específico, com suporte a paginação.
      *
