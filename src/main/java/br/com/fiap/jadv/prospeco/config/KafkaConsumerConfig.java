@@ -4,14 +4,18 @@ import br.com.fiap.jadv.prospeco.dto.response.*;
 import br.com.fiap.jadv.prospeco.dto.request.NotificacaoRequestDTO;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +23,8 @@ import java.util.Map;
 @EnableKafka
 @Configuration
 public class KafkaConsumerConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerConfig.class);
 
     private <T> ConsumerFactory<String, T> consumerFactory(Class<T> clazz) {
         Map<String, Object> configProps = new HashMap<>();
@@ -28,64 +34,62 @@ public class KafkaConsumerConfig {
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         configProps.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "br.com.fiap.jadv.prospeco.dto.response, br.com.fiap.jadv.prospeco.dto.request");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, clazz.getName());
         return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), new JsonDeserializer<>(clazz));
+    }
+
+    private <T> ConcurrentKafkaListenerContainerFactory<String, T> createKafkaListenerContainerFactory(Class<T> clazz) {
+        ConcurrentKafkaListenerContainerFactory<String, T> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory(clazz));
+        factory.setCommonErrorHandler(new DefaultErrorHandler(new FixedBackOff(1000L, 3))); // Retentativa com 1 segundo de intervalo e 3 tentativas
+        return factory;
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, AparelhoResponseDTO> aparelhoKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, AparelhoResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(AparelhoResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for AparelhoResponseDTO");
+        return createKafkaListenerContainerFactory(AparelhoResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, BandeiraTarifariaResponseDTO> bandeiraKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, BandeiraTarifariaResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(BandeiraTarifariaResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for BandeiraTarifariaResponseDTO");
+        return createKafkaListenerContainerFactory(BandeiraTarifariaResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, ConquistaResponseDTO> conquistaKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, ConquistaResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(ConquistaResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for ConquistaResponseDTO");
+        return createKafkaListenerContainerFactory(ConquistaResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, MetaResponseDTO> metaKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, MetaResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(MetaResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for MetaResponseDTO");
+        return createKafkaListenerContainerFactory(MetaResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, UsuarioResponseDTO> usuarioKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, UsuarioResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(UsuarioResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for UsuarioResponseDTO");
+        return createKafkaListenerContainerFactory(UsuarioResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, NotificacaoRequestDTO> notificacaoKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, NotificacaoRequestDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(NotificacaoRequestDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for NotificacaoRequestDTO");
+        return createKafkaListenerContainerFactory(NotificacaoRequestDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, RegistroConsumoResponseDTO> registroConsumoKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, RegistroConsumoResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(RegistroConsumoResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for RegistroConsumoResponseDTO");
+        return createKafkaListenerContainerFactory(RegistroConsumoResponseDTO.class);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, RecomendacaoResponseDTO> recomendacaoKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, RecomendacaoResponseDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(RecomendacaoResponseDTO.class));
-        return factory;
+        logger.info("Configuring Kafka Listener Container for RecomendacaoResponseDTO");
+        return createKafkaListenerContainerFactory(RecomendacaoResponseDTO.class);
     }
-
-    // Adicione outros tipos conforme necessário
 }
