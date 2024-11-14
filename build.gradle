@@ -50,6 +50,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-azure-store-spring-boot-starter'
     implementation 'org.springframework.integration:spring-integration-http'
     implementation 'org.springframework.integration:spring-integration-jdbc'
+    implementation 'com.google.firebase:firebase-admin:8.1.0'
     implementation 'org.springframework.integration:spring-integration-jpa'
     implementation 'org.springframework.integration:spring-integration-kafka'
     implementation 'org.springframework.kafka:spring-kafka'

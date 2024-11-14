@@ -39,7 +39,7 @@ public class Usuario implements UserDetails {
     private String senha;
 
     @Column(nullable = false)
-    private String role; // e.g., "ROLE_USER", "ROLE_ADMIN"
+    private String role;
 
     @PositiveOrZero(message = "A pontuação de economia deve ser positiva.")
     @Column(name = "pontuacao_economia", nullable = false)
@@ -49,13 +49,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(() -> {
-            if (role.startsWith("ROLE_")) {
-                return role;
-            } else {
-                return "ROLE_" + role;
-            }
-        });
+        return Collections.singleton(() -> "ROLE_" + role);
     }
 
     @Override
@@ -70,21 +64,21 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // Ou sua lógica de expiração de conta
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // Ou sua lógica de bloqueio de conta
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // Ou sua lógica de expiração de credenciais
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return true; // Ou sua lógica para determinar se o usuário está ativo
+        return true;
     }
 }
