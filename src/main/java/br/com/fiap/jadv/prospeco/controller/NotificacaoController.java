@@ -11,13 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-
-import java.util.List;
-
-/**
- * <h1>NotificacaoController</h1>
- * Controller responsável pelos endpoints relacionados às notificações dos usuários.
- */
 @RestController
 @RequestMapping("/notificacoes")
 @RequiredArgsConstructor
@@ -26,56 +19,53 @@ public class NotificacaoController {
     private final NotificacaoService notificacaoService;
 
     /**
-     * Cria uma nova notificação para um usuário específico.
+     * Endpoint para criar uma nova notificação para um usuário específico.
      *
-     * @param notificacaoRequestDTO DTO contendo os dados da notificação.
-     * @return DTO de resposta contendo os dados da notificação criada.
+     * @param requestDTO Dados da nova notificação.
+     * @return ResponseEntity contendo o NotificacaoResponseDTO e o status 201 (Created).
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<NotificacaoResponseDTO> criarNotificacao(
-            @Valid @RequestBody NotificacaoRequestDTO notificacaoRequestDTO) {
-        NotificacaoResponseDTO responseDTO = notificacaoService.criarNotificacao(notificacaoRequestDTO);
+    public ResponseEntity<NotificacaoResponseDTO> criarNotificacao(@Valid @RequestBody NotificacaoRequestDTO requestDTO) {
+        NotificacaoResponseDTO responseDTO = notificacaoService.criarNotificacao(requestDTO);
         return ResponseEntity.status(201).body(responseDTO);
     }
 
     /**
-     * Busca todas as notificações de um usuário específico.
+     * Endpoint para listar notificações de um usuário específico com paginação.
      *
      * @param usuarioId ID do usuário.
-     * @return Lista de DTOs de resposta contendo as notificações do usuário.
+     * @param pageable  Configuração de paginação.
+     * @return Página de NotificacaoResponseDTO.
      */
     @GetMapping("/usuarios/{usuarioId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Page<NotificacaoResponseDTO>> buscarNotificacoesPorUsuario(
+    public ResponseEntity<Page<NotificacaoResponseDTO>> listarNotificacoesPorUsuario(
             @PathVariable Long usuarioId, Pageable pageable) {
-        Page<NotificacaoResponseDTO> notificacoes = notificacaoService.buscarNotificacoesPorUsuario(usuarioId, pageable);
+
+        Page<NotificacaoResponseDTO> notificacoes = notificacaoService.listarNotificacoesPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(notificacoes);
     }
 
     /**
-     * Marca uma notificação como lida.
-     *
-     * @param id ID da notificação.
-     * @return Resposta sem conteúdo.
-     */
-    @PutMapping("/{id}/marcar-como-lida")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> marcarNotificacaoComoLida(@PathVariable Long id) {
-        notificacaoService.marcarNotificacaoComoLida(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Conta o número de notificações não lidas de um usuário específico.
+     * Endpoint para contar notificações não lidas de um usuário específico.
      *
      * @param usuarioId ID do usuário.
      * @return Número de notificações não lidas.
      */
     @GetMapping("/usuarios/{usuarioId}/nao-lidas")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Long> contarNotificacoesNaoLidas(@PathVariable Long usuarioId) {
-        long count = notificacaoService.contarNotificacoesNaoLidas(usuarioId);
-        return ResponseEntity.ok(count);
+        long naoLidas = notificacaoService.contarNotificacoesNaoLidas(usuarioId);
+        return ResponseEntity.ok(naoLidas);
+    }
+
+    /**
+     * Endpoint para marcar uma notificação como lida.
+     *
+     * @param id ID da notificação a ser marcada como lida.
+     * @return ResponseEntity com status 204 (No Content).
+     */
+    @PatchMapping("/{id}/lida")
+    public ResponseEntity<Void> marcarNotificacaoComoLida(@PathVariable Long id) {
+        notificacaoService.marcarNotificacaoComoLida(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -2,90 +2,79 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.ConquistaRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.ConquistaResponseDTO;
-import br.com.fiap.jadv.prospeco.kafka.KafkaConquistaProducer;
+import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Conquista;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.ConquistaRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class ConquistaService {
 
     private final ConquistaRepository conquistaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaConquistaProducer kafkaConquistaProducer;
+    private final KafkaTemplate<String, ConquistaResponseDTO> kafkaTemplate;
 
+    @Value("${spring.kafka.topic.conquista-events}")
+    private String conquistaEventsTopic;
+
+    /**
+     * Cria uma nova conquista para um usuário específico e envia um evento ao Kafka.
+     *
+     * @param requestDTO Dados da nova conquista.
+     * @return ConquistaResponseDTO com os dados da conquista criada.
+     */
     @Transactional
-    public ConquistaResponseDTO criarConquista(ConquistaRequestDTO conquistaRequestDTO) {
-        Usuario usuario = usuarioRepository.findById(conquistaRequestDTO.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+    public ConquistaResponseDTO criarConquista(ConquistaRequestDTO requestDTO) {
+        Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         Conquista conquista = Conquista.builder()
-                .titulo(conquistaRequestDTO.getTitulo())
-                .descricao(conquistaRequestDTO.getDescricao())
+                .titulo(requestDTO.getTitulo())
+                .descricao(requestDTO.getDescricao())
                 .dataConquista(LocalDateTime.now())
                 .usuario(usuario)
                 .build();
 
-        Conquista conquistaSalva = conquistaRepository.save(conquista);
+        conquistaRepository.save(conquista);
 
-        // Enviar evento ao Kafka
-        ConquistaResponseDTO conquistaResponseDTO = mapToConquistaResponseDTO(conquistaSalva);
-        kafkaConquistaProducer.enviarConquista(conquistaResponseDTO);
+        ConquistaResponseDTO response = convertToResponseDTO(conquista);
+        kafkaTemplate.send(conquistaEventsTopic, response);
 
-        return conquistaResponseDTO;
+        return response;
     }
 
-    @Transactional(readOnly = true)
-    public Page<ConquistaResponseDTO> buscarConquistasPorUsuario(Long usuarioId, Pageable pageable) {
-        if (!usuarioRepository.existsById(usuarioId)) {
-            throw new ResourceNotFoundException("Usuário não encontrado.");
-        }
-
+    /**
+     * Lista conquistas de um usuário específico com suporte a paginação.
+     *
+     * @param usuarioId ID do usuário.
+     * @param pageable  Configuração de paginação.
+     * @return Página de ConquistaResponseDTO.
+     */
+    public Page<ConquistaResponseDTO> listarConquistasPorUsuario(Long usuarioId, Pageable pageable) {
         return conquistaRepository.findByUsuarioId(usuarioId, pageable)
-                .map(this::mapToConquistaResponseDTO);
+                .map(this::convertToResponseDTO);
     }
 
-    @Transactional
-    public ConquistaResponseDTO atualizarConquista(Long id, ConquistaRequestDTO conquistaRequestDTO) {
-        Conquista conquista = conquistaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Conquista não encontrada."));
-
-        conquista.setTitulo(conquistaRequestDTO.getTitulo());
-        conquista.setDescricao(conquistaRequestDTO.getDescricao());
-        // Atualize dataConquista, se aplicável
-        Conquista conquistaAtualizada = conquistaRepository.save(conquista);
-
-        // Enviar evento ao Kafka
-        ConquistaResponseDTO conquistaResponseDTO = mapToConquistaResponseDTO(conquistaAtualizada);
-        kafkaConquistaProducer.enviarConquista(conquistaResponseDTO);
-
-        return conquistaResponseDTO;
-    }
-
-    @Transactional
-    public void excluirConquista(Long id) {
-        if (!conquistaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Conquista não encontrada.");
-        }
-        conquistaRepository.deleteById(id);
-
-        // Enviar evento de exclusão ao Kafka
-        ConquistaResponseDTO conquistaResponseDTO = ConquistaResponseDTO.builder().id(id).build();
-        kafkaConquistaProducer.enviarConquista(conquistaResponseDTO);
-    }
-
-    private ConquistaResponseDTO mapToConquistaResponseDTO(Conquista conquista) {
+    /**
+     * Converte uma entidade Conquista para ConquistaResponseDTO.
+     *
+     * @param conquista Entidade Conquista a ser convertida.
+     * @return ConquistaResponseDTO correspondente.
+     */
+    private ConquistaResponseDTO convertToResponseDTO(Conquista conquista) {
         return ConquistaResponseDTO.builder()
                 .id(conquista.getId())
                 .titulo(conquista.getTitulo())

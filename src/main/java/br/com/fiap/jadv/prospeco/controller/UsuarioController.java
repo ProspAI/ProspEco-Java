@@ -5,71 +5,64 @@ import br.com.fiap.jadv.prospeco.dto.response.UsuarioResponseDTO;
 import br.com.fiap.jadv.prospeco.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <h1>UsuarioController</h1>
- * Controller responsável pelos endpoints relacionados aos usuários.
- */
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
     /**
-     * Cria um novo usuário no sistema.
+     * Endpoint para criar um novo usuário.
      *
-     * @param usuarioRequestDTO DTO contendo os dados do usuário a ser criado.
-     * @return DTO de resposta contendo os dados do usuário criado.
+     * @param requestDTO Dados do novo usuário.
+     * @return ResponseEntity contendo o UsuarioResponseDTO e o status 201 (Created).
      */
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> criarUsuario(
-            @Valid @RequestBody UsuarioRequestDTO usuarioRequestDTO) {
-        UsuarioResponseDTO responseDTO = usuarioService.criarUsuario(usuarioRequestDTO);
-        return ResponseEntity.status(201).body(responseDTO);
+    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@Valid @RequestBody UsuarioRequestDTO requestDTO) {
+        UsuarioResponseDTO responseDTO = usuarioService.criarUsuario(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     /**
-     * Busca um usuário pelo ID.
+     * Endpoint para buscar um usuário pelo ID.
      *
      * @param id ID do usuário.
-     * @return DTO contendo os dados do usuário encontrado.
+     * @return ResponseEntity contendo o UsuarioResponseDTO e o status 200 (OK).
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UsuarioResponseDTO> buscarUsuarioPorId(@PathVariable Long id) {
         UsuarioResponseDTO responseDTO = usuarioService.buscarUsuarioPorId(id);
         return ResponseEntity.ok(responseDTO);
     }
 
     /**
-     * Atualiza as informações de um usuário existente.
+     * Endpoint para atualizar os dados de um usuário.
      *
-     * @param id                 ID do usuário.
-     * @param usuarioRequestDTO  DTO contendo os novos dados do usuário.
-     * @return DTO de resposta contendo os dados atualizados do usuário.
+     * @param id         ID do usuário a ser atualizado.
+     * @param requestDTO Dados de atualização do usuário.
+     * @return ResponseEntity contendo o UsuarioResponseDTO atualizado e o status 200 (OK).
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(
-            @PathVariable Long id,
-            @Valid @RequestBody UsuarioRequestDTO usuarioRequestDTO) {
-        UsuarioResponseDTO responseDTO = usuarioService.atualizarUsuario(id, usuarioRequestDTO);
+            @PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO requestDTO) {
+
+        UsuarioResponseDTO responseDTO = usuarioService.atualizarUsuario(id, requestDTO);
         return ResponseEntity.ok(responseDTO);
     }
 
     /**
-     * Exclui um usuário do sistema.
+     * Endpoint para excluir um usuário pelo ID.
      *
      * @param id ID do usuário a ser excluído.
-     * @return Resposta sem conteúdo.
+     * @return ResponseEntity com status 204 (No Content).
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> excluirUsuario(@PathVariable Long id) {
         usuarioService.excluirUsuario(id);
         return ResponseEntity.noContent().build();

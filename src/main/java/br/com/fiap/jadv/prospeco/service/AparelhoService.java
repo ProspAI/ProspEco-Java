@@ -2,95 +2,110 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.AparelhoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.AparelhoResponseDTO;
-import br.com.fiap.jadv.prospeco.kafka.KafkaAparelhoProducer;
+import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Aparelho;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.AparelhoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.stream.Collectors;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class AparelhoService {
 
     private final AparelhoRepository aparelhoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaAparelhoProducer kafkaAparelhoProducer;
+    private final KafkaProducerService kafkaProducerService;
 
+    /**
+     * Cria um novo aparelho para o usuário especificado.
+     *
+     * @param requestDTO Dados de requisição do aparelho.
+     * @param usuarioId  Identificador do usuário proprietário do aparelho.
+     * @return AparelhoResponseDTO contendo os dados do aparelho criado.
+     */
     @Transactional
-    public AparelhoResponseDTO criarAparelho(Long usuarioId, AparelhoRequestDTO aparelhoRequestDTO) {
+    public AparelhoResponseDTO criarAparelho(AparelhoRequestDTO requestDTO, Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
-
-        if (aparelhoRepository.existsByNomeAndUsuario(aparelhoRequestDTO.getNome(), usuario)) {
-            throw new IllegalArgumentException("Um aparelho com este nome já existe para o usuário.");
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         Aparelho aparelho = Aparelho.builder()
-                .nome(aparelhoRequestDTO.getNome())
-                .potencia(aparelhoRequestDTO.getPotencia())
-                .tipo(aparelhoRequestDTO.getTipo())
-                .descricao(aparelhoRequestDTO.getDescricao())
+                .nome(requestDTO.getNome())
+                .potencia(requestDTO.getPotencia())
+                .tipo(requestDTO.getTipo())
+                .descricao(requestDTO.getDescricao())
                 .usuario(usuario)
                 .build();
 
-        Aparelho aparelhoSalvo = aparelhoRepository.save(aparelho);
+        aparelhoRepository.save(aparelho);
 
-        // Enviar evento de criação de aparelho ao Kafka
-        AparelhoResponseDTO aparelhoResponseDTO = mapToAparelhoResponseDTO(aparelhoSalvo);
-        kafkaAparelhoProducer.enviarAparelho(aparelhoResponseDTO);
+        AparelhoResponseDTO response = convertToResponseDTO(aparelho);
+        kafkaProducerService.sendAparelhoEvent(response);
 
-        return aparelhoResponseDTO;
+        return response;
     }
 
+    /**
+     * Atualiza um aparelho existente.
+     *
+     * @param id         Identificador do aparelho a ser atualizado.
+     * @param requestDTO Dados de atualização do aparelho.
+     * @return AparelhoResponseDTO contendo os dados do aparelho atualizado.
+     */
     @Transactional
-    public AparelhoResponseDTO atualizarAparelho(Long id, AparelhoRequestDTO aparelhoRequestDTO) {
+    public AparelhoResponseDTO atualizarAparelho(Long id, AparelhoRequestDTO requestDTO) {
         Aparelho aparelho = aparelhoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Aparelho não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Aparelho não encontrado"));
 
-        aparelho.setNome(aparelhoRequestDTO.getNome());
-        aparelho.setPotencia(aparelhoRequestDTO.getPotencia());
-        aparelho.setTipo(aparelhoRequestDTO.getTipo());
-        aparelho.setDescricao(aparelhoRequestDTO.getDescricao());
+        BeanUtils.copyProperties(requestDTO, aparelho, "id", "usuario");
 
-        Aparelho aparelhoAtualizado = aparelhoRepository.save(aparelho);
+        aparelhoRepository.save(aparelho);
 
-        // Enviar evento de atualização de aparelho ao Kafka
-        AparelhoResponseDTO aparelhoResponseDTO = mapToAparelhoResponseDTO(aparelhoAtualizado);
-        kafkaAparelhoProducer.enviarAparelho(aparelhoResponseDTO);
+        AparelhoResponseDTO response = convertToResponseDTO(aparelho);
+        kafkaProducerService.sendAparelhoEvent(response);
 
-        return aparelhoResponseDTO;
+        return response;
     }
 
+    /**
+     * Lista aparelhos de um usuário com paginação.
+     *
+     * @param usuarioId Identificador do usuário.
+     * @param pageable  Configuração de paginação.
+     * @return Página de AparelhoResponseDTO.
+     */
+    public Page<AparelhoResponseDTO> listarAparelhosPorUsuario(Long usuarioId, Pageable pageable) {
+        return aparelhoRepository.findByUsuarioId(usuarioId, pageable)
+                .map(this::convertToResponseDTO);
+    }
+
+    /**
+     * Exclui um aparelho por ID.
+     *
+     * @param id Identificador do aparelho a ser excluído.
+     */
     @Transactional
     public void excluirAparelho(Long id) {
-        if (!aparelhoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Aparelho não encontrado.");
-        }
-        aparelhoRepository.deleteById(id);
+        Aparelho aparelho = aparelhoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Aparelho não encontrado"));
 
-        // Enviar evento de exclusão de aparelho ao Kafka
-        AparelhoResponseDTO aparelhoResponseDTO = AparelhoResponseDTO.builder().id(id).build();
-        kafkaAparelhoProducer.enviarAparelho(aparelhoResponseDTO);
+        aparelhoRepository.delete(aparelho);
     }
 
-    @Transactional(readOnly = true)
-    public Page<AparelhoResponseDTO> buscarAparelhosPorUsuario(Long usuarioId, Pageable pageable) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
-
-        return aparelhoRepository.findByUsuario(usuario, pageable)
-                .map(this::mapToAparelhoResponseDTO);
-    }
-
-    private AparelhoResponseDTO mapToAparelhoResponseDTO(Aparelho aparelho) {
+    /**
+     * Converte um Aparelho em AparelhoResponseDTO.
+     *
+     * @param aparelho Aparelho a ser convertido.
+     * @return AparelhoResponseDTO correspondente.
+     */
+    private AparelhoResponseDTO convertToResponseDTO(Aparelho aparelho) {
         return AparelhoResponseDTO.builder()
                 .id(aparelho.getId())
                 .nome(aparelho.getNome())

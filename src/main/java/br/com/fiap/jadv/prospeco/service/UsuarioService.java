@@ -2,188 +2,142 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.UsuarioRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.UsuarioResponseDTO;
-import br.com.fiap.jadv.prospeco.kafka.KafkaUsuarioProducer;
+import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.Optional;
 
-@RequiredArgsConstructor
 @Service
-public class UsuarioService implements UserDetailsService {
+@RequiredArgsConstructor
+@Validated
+public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final KafkaUsuarioProducer kafkaUsuarioProducer;
+    private final KafkaTemplate<String, UsuarioResponseDTO> kafkaTemplate;
+
+    @Value("${spring.kafka.topic.usuario-events}")
+    private String usuarioEventsTopic;
 
     /**
-     * Cria um novo usuário no sistema.
+     * Cria um novo usuário e envia um evento ao Kafka.
      *
-     * @param usuarioRequestDTO DTO contendo os dados do usuário a ser criado.
-     * @return DTO de resposta contendo os dados do usuário criado.
+     * @param requestDTO Dados do usuário a ser criado.
+     * @return UsuarioResponseDTO com os dados do usuário criado.
      */
     @Transactional
-    public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO usuarioRequestDTO) {
-        if (usuarioRepository.existsByEmail(usuarioRequestDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já cadastrado.");
+    public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO requestDTO) {
+        if (usuarioRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new IllegalArgumentException("O email já está em uso.");
         }
 
         Usuario usuario = Usuario.builder()
-                .nome(usuarioRequestDTO.getNome())
-                .email(usuarioRequestDTO.getEmail())
-                .senha(passwordEncoder.encode(usuarioRequestDTO.getSenha()))
+                .nome(requestDTO.getNome())
+                .email(requestDTO.getEmail())
+                .senha(passwordEncoder.encode(requestDTO.getSenha()))
                 .role("ROLE_USER")
                 .pontuacaoEconomia(0.0)
                 .build();
 
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+        usuarioRepository.save(usuario);
 
-        // Enviar evento de novo usuário ao Kafka
-        UsuarioResponseDTO usuarioResponseDTO = mapToUsuarioResponseDTO(usuarioSalvo);
-        kafkaUsuarioProducer.enviarUsuario(usuarioResponseDTO);
+        UsuarioResponseDTO response = convertToResponseDTO(usuario);
+        kafkaTemplate.send(usuarioEventsTopic, response);
 
-        return usuarioResponseDTO;
+        return response;
     }
 
     /**
      * Busca um usuário pelo ID.
      *
      * @param id ID do usuário.
-     * @return DTO contendo os dados do usuário encontrado.
+     * @return UsuarioResponseDTO com os dados do usuário encontrado.
      */
-    @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarUsuarioPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + id));
-        return mapToUsuarioResponseDTO(usuario);
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+
+        return convertToResponseDTO(usuario);
     }
 
     /**
-     * Atualiza as informações de um usuário existente.
+     * Busca um usuário pelo email.
      *
-     * @param id                 ID do usuário.
-     * @param usuarioRequestDTO  DTO contendo os novos dados do usuário.
-     * @return DTO de resposta contendo os dados atualizados do usuário.
+     * @param email Email do usuário.
+     * @return UsuarioResponseDTO com os dados do usuário encontrado.
+     */
+    public UsuarioResponseDTO buscarUsuarioPorEmail(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o email: " + email));
+
+        return convertToResponseDTO(usuario);
+    }
+
+    /**
+     * Atualiza os dados de um usuário existente e envia um evento ao Kafka.
+     *
+     * @param id         ID do usuário a ser atualizado.
+     * @param requestDTO Dados de atualização do usuário.
+     * @return UsuarioResponseDTO com os dados do usuário atualizado.
      */
     @Transactional
-    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO usuarioRequestDTO) {
+    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        if (!usuario.getEmail().equals(usuarioRequestDTO.getEmail()) &&
-                usuarioRepository.existsByEmail(usuarioRequestDTO.getEmail())) {
-            throw new IllegalArgumentException("Email já cadastrado.");
+        if (!usuario.getEmail().equals(requestDTO.getEmail()) && usuarioRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new IllegalArgumentException("O email já está em uso.");
         }
 
-        usuario.setNome(usuarioRequestDTO.getNome());
-        usuario.setEmail(usuarioRequestDTO.getEmail());
-        if (usuarioRequestDTO.getSenha() != null && !usuarioRequestDTO.getSenha().isBlank()) {
-            usuario.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
-        }
+        usuario.setNome(requestDTO.getNome());
+        usuario.setEmail(requestDTO.getEmail());
+        usuario.setSenha(passwordEncoder.encode(requestDTO.getSenha()));
 
-        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
+        usuarioRepository.save(usuario);
 
-        // Enviar evento de atualização de usuário ao Kafka
-        UsuarioResponseDTO usuarioResponseDTO = mapToUsuarioResponseDTO(usuarioAtualizado);
-        kafkaUsuarioProducer.enviarUsuario(usuarioResponseDTO);
+        UsuarioResponseDTO response = convertToResponseDTO(usuario);
+        kafkaTemplate.send(usuarioEventsTopic, response);
 
-        return usuarioResponseDTO;
+        return response;
     }
 
     /**
-     * Exclui um usuário do sistema.
+     * Exclui um usuário pelo ID e envia um evento ao Kafka.
      *
      * @param id ID do usuário a ser excluído.
      */
     @Transactional
     public void excluirUsuario(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new EntityNotFoundException("Usuário não encontrado.");
-        }
-        usuarioRepository.deleteById(id);
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        // Enviar evento de exclusão de usuário ao Kafka
-        UsuarioResponseDTO usuarioResponseDTO = UsuarioResponseDTO.builder().id(id).build();
-        kafkaUsuarioProducer.enviarUsuario(usuarioResponseDTO);
+        UsuarioResponseDTO response = convertToResponseDTO(usuario);
+        usuarioRepository.delete(usuario);
+
+        kafkaTemplate.send(usuarioEventsTopic, response);
     }
 
     /**
-     * Método para registrar um usuário do Firebase no banco de dados.
+     * Converte uma entidade Usuario para UsuarioResponseDTO.
      *
-     * @param uid   UID do usuário no Firebase.
-     * @param nome  Nome do usuário.
-     * @param email Email do usuário.
-     * @return Usuário registrado no banco de dados.
+     * @param usuario Entidade Usuario a ser convertida.
+     * @return UsuarioResponseDTO correspondente.
      */
-    @Transactional
-    public Usuario registrarUsuarioFirebase(String uid, String nome, String email) {
-        // Verifica novamente se o usuário já existe para evitar duplicatas
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email já cadastrado.");
-        }
-
-        Usuario usuario = Usuario.builder()
-                .nome(nome)
-                .email(email)
-                .senha(passwordEncoder.encode(uid)) // Opcional: considerar uma estratégia diferente
-                .role("ROLE_USER")
-                .pontuacaoEconomia(0.0)
-                .build();
-
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
-
-        // Enviar evento de novo usuário ao Kafka
-        UsuarioResponseDTO usuarioResponseDTO = mapToUsuarioResponseDTO(usuarioSalvo);
-        kafkaUsuarioProducer.enviarUsuario(usuarioResponseDTO);
-
-        return usuarioSalvo;
-    }
-
-    /**
-     * Método para buscar um usuário por email.
-     *
-     * @param email Email do usuário.
-     * @return Usuário se encontrado, ou null caso contrário.
-     */
-    @Transactional(readOnly = true)
-    public Usuario buscarUsuarioPorEmail(String email) {
-        Optional<Usuario> usuarioOptional = usuarioRepository.findByEmail(email);
-        return usuarioOptional.orElse(null);
-    }
-
-    /**
-     * Mapeia a entidade Usuario para o DTO de resposta.
-     *
-     * @param usuario Entidade Usuario.
-     * @return DTO de resposta.
-     */
-    public UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
+    private UsuarioResponseDTO convertToResponseDTO(Usuario usuario) {
         return UsuarioResponseDTO.builder()
                 .id(usuario.getId())
                 .nome(usuario.getNome())
                 .email(usuario.getEmail())
                 .pontuacaoEconomia(usuario.getPontuacaoEconomia())
                 .build();
-    }
-
-    /**
-     * Carrega os detalhes do usuário pelo email.
-     *
-     * @param username Email do usuário.
-     * @return Detalhes do usuário.
-     * @throws UsernameNotFoundException Se o usuário não for encontrado.
-     */
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return usuarioRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + username));
     }
 }

@@ -9,44 +9,70 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/aparelhos")
+@RequestMapping("/api/aparelhos")
 @RequiredArgsConstructor
 public class AparelhoController {
 
     private final AparelhoService aparelhoService;
 
+    /**
+     * Endpoint para criar um novo aparelho para um usuário específico.
+     *
+     * @param usuarioId Identificador do usuário.
+     * @param requestDTO Dados do aparelho.
+     * @return ResponseEntity contendo o AparelhoResponseDTO e o status 201 (Created).
+     */
     @PostMapping("/usuarios/{usuarioId}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AparelhoResponseDTO> criarAparelho(
             @PathVariable Long usuarioId,
-            @Valid @RequestBody AparelhoRequestDTO aparelhoRequestDTO) {
-        AparelhoResponseDTO responseDTO = aparelhoService.criarAparelho(usuarioId, aparelhoRequestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+            @Valid @RequestBody AparelhoRequestDTO requestDTO) {
+
+        AparelhoResponseDTO response = aparelhoService.criarAparelho(requestDTO, usuarioId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Endpoint para atualizar um aparelho existente.
+     *
+     * @param id Identificador do aparelho.
+     * @param requestDTO Dados de atualização do aparelho.
+     * @return ResponseEntity contendo o AparelhoResponseDTO atualizado e o status 200 (OK).
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<AparelhoResponseDTO> atualizarAparelho(
+            @PathVariable Long id,
+            @Valid @RequestBody AparelhoRequestDTO requestDTO) {
+
+        AparelhoResponseDTO response = aparelhoService.atualizarAparelho(id, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint para listar aparelhos de um usuário específico com paginação.
+     *
+     * @param usuarioId Identificador do usuário.
+     * @param pageable Configuração de paginação.
+     * @return Página de AparelhoResponseDTO.
+     */
     @GetMapping("/usuarios/{usuarioId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Page<AparelhoResponseDTO>> buscarAparelhosPorUsuario(
-            @PathVariable Long usuarioId, Pageable pageable) {
-        Page<AparelhoResponseDTO> aparelhos = aparelhoService.buscarAparelhosPorUsuario(usuarioId, pageable);
+    public ResponseEntity<Page<AparelhoResponseDTO>> listarAparelhosPorUsuario(
+            @PathVariable Long usuarioId,
+            Pageable pageable) {
+
+        Page<AparelhoResponseDTO> aparelhos = aparelhoService.listarAparelhosPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(aparelhos);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<AparelhoResponseDTO> atualizarAparelho(
-            @PathVariable Long id,
-            @Valid @RequestBody AparelhoRequestDTO aparelhoRequestDTO) {
-        AparelhoResponseDTO responseDTO = aparelhoService.atualizarAparelho(id, aparelhoRequestDTO);
-        return ResponseEntity.ok(responseDTO);
-    }
-
+    /**
+     * Endpoint para excluir um aparelho.
+     *
+     * @param id Identificador do aparelho a ser excluído.
+     * @return ResponseEntity com o status 204 (No Content).
+     */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> excluirAparelho(@PathVariable Long id) {
         aparelhoService.excluirAparelho(id);
         return ResponseEntity.noContent().build();

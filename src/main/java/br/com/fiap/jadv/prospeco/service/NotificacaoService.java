@@ -2,99 +2,112 @@ package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.NotificacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.NotificacaoResponseDTO;
-import br.com.fiap.jadv.prospeco.kafka.KafkaNotificacaoProducer;
+import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Notificacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.NotificacaoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaNotificacaoProducer kafkaNotificacaoProducer;
+    private final KafkaTemplate<String, NotificacaoResponseDTO> kafkaTemplate;
 
+    @Value("${spring.kafka.topic.notificacao-events}")
+    private String notificacaoEventsTopic;
+
+    /**
+     * Cria uma nova notificação para um usuário específico e envia um evento ao Kafka.
+     *
+     * @param requestDTO Dados da nova notificação.
+     * @return NotificacaoResponseDTO com os dados da notificação criada.
+     */
     @Transactional
-    public NotificacaoResponseDTO criarNotificacao(NotificacaoRequestDTO notificacaoRequestDTO) {
-        Usuario usuario = usuarioRepository.findById(notificacaoRequestDTO.getUsuarioId())
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+    public NotificacaoResponseDTO criarNotificacao(NotificacaoRequestDTO requestDTO) {
+        Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         Notificacao notificacao = Notificacao.builder()
-                .mensagem(notificacaoRequestDTO.getMensagem())
+                .mensagem(requestDTO.getMensagem())
                 .dataHora(LocalDateTime.now())
                 .lida(false)
                 .usuario(usuario)
                 .build();
 
-        Notificacao notificacaoSalva = notificacaoRepository.save(notificacao);
+        notificacaoRepository.save(notificacao);
 
-        // Envia a notificação para o Kafka
-        kafkaNotificacaoProducer.enviarNotificacao(notificacaoRequestDTO);
+        NotificacaoResponseDTO response = convertToResponseDTO(notificacao);
+        kafkaTemplate.send(notificacaoEventsTopic, response);
 
-        return mapToNotificacaoResponseDTO(notificacaoSalva);
+        return response;
     }
 
     /**
-     * Busca todas as notificações de um usuário específico com paginação.
+     * Lista as notificações de um usuário específico com suporte a paginação.
      *
      * @param usuarioId ID do usuário.
-     * @param pageable Objeto de paginação.
-     * @return Página de DTOs de resposta contendo as notificações do usuário.
+     * @param pageable  Configuração de paginação.
+     * @return Página de NotificacaoResponseDTO.
      */
-    @Transactional(readOnly = true)
-    public Page<NotificacaoResponseDTO> buscarNotificacoesPorUsuario(Long usuarioId, Pageable pageable) {
+    public Page<NotificacaoResponseDTO> listarNotificacoesPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         return notificacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario, pageable)
-                .map(this::mapToNotificacaoResponseDTO);
+                .map(this::convertToResponseDTO);
     }
 
     /**
-     * Marca uma notificação como lida.
-     *
-     * @param id ID da notificação.
-     */
-    @Transactional
-    public void marcarNotificacaoComoLida(Long id) {
-        Notificacao notificacao = notificacaoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Notificação não encontrada."));
-
-        notificacao.setLida(true);
-        notificacaoRepository.save(notificacao);
-    }
-
-    /**
-     * Conta o número de notificações não lidas de um usuário específico.
+     * Conta o número de notificações não lidas de um usuário.
      *
      * @param usuarioId ID do usuário.
      * @return Número de notificações não lidas.
      */
-    @Transactional(readOnly = true)
     public long contarNotificacoesNaoLidas(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         return notificacaoRepository.countByUsuarioAndLida(usuario, false);
     }
 
     /**
-     * Mapeia um objeto Notificacao para NotificacaoResponseDTO.
+     * Marca uma notificação como lida e envia um evento ao Kafka.
      *
-     * @param notificacao Notificação a ser mapeada.
-     * @return DTO de resposta da notificação.
+     * @param id ID da notificação a ser marcada como lida.
      */
-    private NotificacaoResponseDTO mapToNotificacaoResponseDTO(Notificacao notificacao) {
+    @Transactional
+    public void marcarNotificacaoComoLida(Long id) {
+        Notificacao notificacao = notificacaoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notificação não encontrada"));
+
+        notificacao.setLida(true);
+        notificacaoRepository.save(notificacao);
+
+        NotificacaoResponseDTO response = convertToResponseDTO(notificacao);
+        kafkaTemplate.send(notificacaoEventsTopic, response);
+    }
+
+    /**
+     * Converte uma entidade Notificacao para NotificacaoResponseDTO.
+     *
+     * @param notificacao Entidade Notificacao a ser convertida.
+     * @return NotificacaoResponseDTO correspondente.
+     */
+    private NotificacaoResponseDTO convertToResponseDTO(Notificacao notificacao) {
         return NotificacaoResponseDTO.builder()
                 .id(notificacao.getId())
                 .mensagem(notificacao.getMensagem())

@@ -1,106 +1,130 @@
 package br.com.fiap.jadv.prospeco.service;
 
+import br.com.fiap.jadv.prospeco.dto.request.RecomendacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.RecomendacaoResponseDTO;
-import br.com.fiap.jadv.prospeco.kafka.KafkaRecomendacaoProducer;
+import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Recomendacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.RecomendacaoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
+@Validated
 public class RecomendacaoService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RecomendacaoService.class);
 
     private final RecomendacaoRepository recomendacaoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaRecomendacaoProducer kafkaRecomendacaoProducer;
+    private final AzureOpenAiChatModel chatModel;
+    private final KafkaTemplate<String, RecomendacaoResponseDTO> kafkaTemplate;
 
+    @Value("${spring.kafka.topic.recomendacao-events}")
+    private String recomendacaoEventsTopic;
+
+    public RecomendacaoService(RecomendacaoRepository recomendacaoRepository,
+                               UsuarioRepository usuarioRepository,
+                               AzureOpenAiChatModel chatModel,
+                               KafkaTemplate<String, RecomendacaoResponseDTO> kafkaTemplate) {
+        this.recomendacaoRepository = recomendacaoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.chatModel = chatModel;
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+    /**
+     * Cria uma nova recomendação para um usuário específico, gerada pela IA e envia um evento ao Kafka.
+     *
+     * @param requestDTO Dados da nova recomendação.
+     * @return RecomendacaoResponseDTO com os dados da recomendação gerada.
+     */
     @Transactional
-    public RecomendacaoResponseDTO criarRecomendacao(Long usuarioId, String mensagem) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+    public RecomendacaoResponseDTO criarRecomendacao(RecomendacaoRequestDTO requestDTO) {
+        Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+
+        String promptText = generatePromptText(usuario, requestDTO.getMensagem());
+        String generatedContent = generateRecommendationContent(promptText);
 
         Recomendacao recomendacao = Recomendacao.builder()
-                .mensagem(mensagem)
+                .mensagem(generatedContent)
                 .dataHora(LocalDateTime.now())
                 .usuario(usuario)
                 .build();
 
-        Recomendacao recomendacaoSalva = recomendacaoRepository.save(recomendacao);
+        recomendacaoRepository.save(recomendacao);
 
-        // Enviar recomendação para o Kafka
-        RecomendacaoResponseDTO recomendacaoResponseDTO = mapToRecomendacaoResponseDTO(recomendacaoSalva);
-        kafkaRecomendacaoProducer.enviarRecomendacao(recomendacaoResponseDTO);
+        RecomendacaoResponseDTO response = convertToResponseDTO(recomendacao);
+        kafkaTemplate.send(recomendacaoEventsTopic, response);
 
-        return recomendacaoResponseDTO;
+        return response;
     }
 
     /**
-     * Busca todas as recomendações de um usuário específico com paginação.
+     * Lista as recomendações de um usuário específico com suporte a paginação.
      *
      * @param usuarioId ID do usuário.
-     * @param pageable Objeto de paginação.
-     * @return Página de DTOs de resposta contendo as recomendações do usuário.
+     * @param pageable  Configuração de paginação.
+     * @return Página de RecomendacaoResponseDTO.
      */
-    @Transactional(readOnly = true)
-    public Page<RecomendacaoResponseDTO> buscarRecomendacoesPorUsuario(Long usuarioId, Pageable pageable) {
+    public Page<RecomendacaoResponseDTO> listarRecomendacoesPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         return recomendacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario, pageable)
-                .map(this::mapToRecomendacaoResponseDTO);
+                .map(this::convertToResponseDTO);
     }
 
     /**
-     * Atualiza uma recomendação específica.
+     * Gera o texto do prompt para a IA baseado na mensagem e no contexto do usuário.
      *
-     * @param id ID da recomendação.
-     * @param novaMensagem Nova mensagem da recomendação.
-     * @return DTO de resposta contendo os dados da recomendação atualizada.
+     * @param usuario Usuário destinatário.
+     * @param mensagem Mensagem base para a recomendação.
+     * @return Texto do prompt a ser enviado para a IA.
      */
-    @Transactional
-    public RecomendacaoResponseDTO atualizarRecomendacao(Long id, String novaMensagem) {
-        Recomendacao recomendacao = recomendacaoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Recomendação não encontrada."));
-
-        recomendacao.setMensagem(novaMensagem);
-        Recomendacao recomendacaoAtualizada = recomendacaoRepository.save(recomendacao);
-
-        // Enviar atualização para o Kafka
-        RecomendacaoResponseDTO recomendacaoResponseDTO = mapToRecomendacaoResponseDTO(recomendacaoAtualizada);
-        kafkaRecomendacaoProducer.enviarRecomendacao(recomendacaoResponseDTO);
-
-        return recomendacaoResponseDTO;
+    private String generatePromptText(Usuario usuario, String mensagem) {
+        return String.format("Gere uma recomendação personalizada para ajudar %s a economizar energia. Base: '%s'.",
+                usuario.getNome(), mensagem);
     }
 
     /**
-     * Exclui uma recomendação pelo ID.
+     * Gera o conteúdo de recomendação com a IA utilizando o modelo AzureOpenAiChatModel.
      *
-     * @param id ID da recomendação a ser excluída.
+     * @param promptText Texto do prompt enviado para a IA.
+     * @return Conteúdo gerado pela IA.
      */
-    @Transactional
-    public void excluirRecomendacao(Long id) {
-        if (!recomendacaoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Recomendação não encontrada.");
+    private String generateRecommendationContent(String promptText) {
+        try {
+            logger.info("Enviando prompt para IA: {}", promptText);
+            UserMessage userMessage = new UserMessage(promptText);
+            return chatModel.call(userMessage);
+        } catch (Exception e) {
+            logger.error("Erro ao gerar conteúdo de recomendação: {}", e.getMessage(), e);
+            throw new RuntimeException("Erro ao gerar conteúdo de recomendação", e);
         }
-        recomendacaoRepository.deleteById(id);
     }
 
     /**
-     * Mapeia um objeto Recomendacao para RecomendacaoResponseDTO.
+     * Converte uma entidade Recomendacao para RecomendacaoResponseDTO.
      *
-     * @param recomendacao Recomendação a ser mapeada.
-     * @return DTO de resposta da recomendação.
+     * @param recomendacao Entidade Recomendacao a ser convertida.
+     * @return RecomendacaoResponseDTO correspondente.
      */
-    private RecomendacaoResponseDTO mapToRecomendacaoResponseDTO(Recomendacao recomendacao) {
+    private RecomendacaoResponseDTO convertToResponseDTO(Recomendacao recomendacao) {
         return RecomendacaoResponseDTO.builder()
                 .id(recomendacao.getId())
                 .mensagem(recomendacao.getMensagem())

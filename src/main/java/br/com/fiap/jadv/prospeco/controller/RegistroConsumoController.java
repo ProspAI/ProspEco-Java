@@ -7,16 +7,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * <h1>RegistroConsumoController</h1>
- * Controller responsável pelos endpoints relacionados aos registros de consumo dos aparelhos.
- */
 @RestController
-@RequestMapping("/registros-consumo")
+@RequestMapping("/api/registros-consumo")
 @RequiredArgsConstructor
 public class RegistroConsumoController {
 
@@ -25,43 +22,29 @@ public class RegistroConsumoController {
     /**
      * Cria um novo registro de consumo para um aparelho específico.
      *
-     * @param registroConsumoRequestDTO DTO contendo os dados do registro de consumo.
-     * @return DTO de resposta contendo os dados do registro de consumo criado.
+     * @param requestDTO Dados do registro de consumo.
+     * @return ResponseEntity contendo o RegistroConsumoResponseDTO e o status 201 (Created).
      */
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RegistroConsumoResponseDTO> criarRegistroConsumo(
-            @Valid @RequestBody RegistroConsumoRequestDTO registroConsumoRequestDTO) {
-        RegistroConsumoResponseDTO responseDTO = registroConsumoService.criarRegistroConsumo(registroConsumoRequestDTO);
-        return ResponseEntity.status(201).body(responseDTO);
+            @Valid @RequestBody RegistroConsumoRequestDTO requestDTO) {
+
+        RegistroConsumoResponseDTO responseDTO = registroConsumoService.criarRegistroConsumo(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     /**
-     * Busca os registros de consumo de um aparelho específico, com suporte a paginação.
+     * Lista registros de consumo de um aparelho específico com paginação.
      *
-     * @param aparelhoId ID do aparelho.
-     * @param pageable   Objeto de paginação.
-     * @return Página de registros de consumo do aparelho.
+     * @param aparelhoId ID do aparelho ao qual os registros pertencem.
+     * @param pageable   Configuração de paginação.
+     * @return ResponseEntity contendo a página de RegistroConsumoResponseDTO e o status 200 (OK).
      */
     @GetMapping("/aparelhos/{aparelhoId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Page<RegistroConsumoResponseDTO>> buscarRegistrosPorAparelho(
-            @PathVariable Long aparelhoId,
-            Pageable pageable) {
-        Page<RegistroConsumoResponseDTO> registros = registroConsumoService.buscarRegistrosPorAparelho(aparelhoId, pageable);
-        return ResponseEntity.ok(registros);
-    }
+    public ResponseEntity<Page<RegistroConsumoResponseDTO>> listarRegistrosPorAparelho(
+            @PathVariable Long aparelhoId, Pageable pageable) {
 
-    /**
-     * Exclui um registro de consumo pelo ID.
-     *
-     * @param id ID do registro de consumo a ser excluído.
-     * @return Resposta sem conteúdo.
-     */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> excluirRegistroConsumo(@PathVariable Long id) {
-        registroConsumoService.excluirRegistroConsumo(id);
-        return ResponseEntity.noContent().build();
+        Page<RegistroConsumoResponseDTO> registros = registroConsumoService.listarRegistrosPorAparelho(aparelhoId, pageable);
+        return ResponseEntity.ok(registros);
     }
 }

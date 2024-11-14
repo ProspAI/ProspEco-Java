@@ -1,4 +1,3 @@
-// LoginController.java
 package br.com.fiap.jadv.prospeco.controller;
 
 import br.com.fiap.jadv.prospeco.config.JwtTokenProvider;
@@ -43,8 +42,7 @@ public class LoginController {
         LoginResponseDTO responseDTO = LoginResponseDTO.builder()
                 .token(token)
                 .tipo("Bearer")
-                .usuario(usuarioService.mapToUsuarioResponseDTO(
-                        usuarioService.buscarUsuarioPorEmail(authentication.getName())))
+                .usuario(usuarioService.buscarUsuarioPorEmail(authentication.getName()))
                 .build();
 
         return ResponseEntity.ok(responseDTO);
