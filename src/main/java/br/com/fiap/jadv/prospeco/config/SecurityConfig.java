@@ -1,10 +1,12 @@
-// SecurityConfig.java
 package br.com.fiap.jadv.prospeco.config;
 
+import br.com.fiap.jadv.prospeco.config.FirebaseTokenFilter;
 import br.com.fiap.jadv.prospeco.service.CustomUserDetailsService;
+import br.com.fiap.jadv.prospeco.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -24,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class SecurityConfig {
 
     private final FirebaseTokenFilter firebaseTokenFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
@@ -35,6 +38,7 @@ public class SecurityConfig {
                 // Configurar autorização de requisições
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll() // Permitir acesso ao login
                         .requestMatchers("/public/**", "/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Libera o Swagger
                         .anyRequest().authenticated()
@@ -62,8 +66,9 @@ public class SecurityConfig {
                 // Integrar UserDetailsService
                 .userDetailsService(customUserDetailsService)
 
-                // Adicionar filtro de token do Firebase antes do filtro de autenticação do Spring
-                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
+                // Adicionar filtros de autenticação
+                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -1,4 +1,3 @@
-// UsuarioService.java
 package br.com.fiap.jadv.prospeco.service;
 
 import br.com.fiap.jadv.prospeco.dto.request.UsuarioRequestDTO;
@@ -166,7 +165,7 @@ public class UsuarioService implements UserDetailsService {
      * @param usuario Entidade Usuario.
      * @return DTO de resposta.
      */
-    private UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
+    public UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
         return UsuarioResponseDTO.builder()
                 .id(usuario.getId())
                 .nome(usuario.getNome())

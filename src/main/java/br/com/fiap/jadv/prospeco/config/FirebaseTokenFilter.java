@@ -1,4 +1,3 @@
-// FirebaseTokenFilter.java
 package br.com.fiap.jadv.prospeco.config;
 
 import br.com.fiap.jadv.prospeco.model.Usuario;
@@ -24,7 +23,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@RequiredArgsConstructor
 @Component
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
@@ -32,6 +30,12 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
 
     private final UsuarioService usuarioService;
     private final CustomUserDetailsService customUserDetailsService;
+
+    // Construtor personalizado com @Lazy na injeção de UsuarioService
+    public FirebaseTokenFilter(@Lazy UsuarioService usuarioService, CustomUserDetailsService customUserDetailsService) {
+        this.usuarioService = usuarioService;
+        this.customUserDetailsService = customUserDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
