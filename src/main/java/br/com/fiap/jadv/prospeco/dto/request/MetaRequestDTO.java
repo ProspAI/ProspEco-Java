@@ -33,4 +33,10 @@ public class MetaRequestDTO {
      */
     @NotNull(message = "A data de fim é obrigatória.")
     private LocalDate dataFim;
+
+    /**
+     * Identificador do usuário que define a meta.
+     */
+    @NotNull(message = "O ID do usuário é obrigatório.")
+    private Long usuarioId;
 }

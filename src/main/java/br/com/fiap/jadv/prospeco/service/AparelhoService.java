@@ -9,10 +9,11 @@ import br.com.fiap.jadv.prospeco.repository.AparelhoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,13 +82,12 @@ public class AparelhoService {
     }
 
     @Transactional(readOnly = true)
-    public List<AparelhoResponseDTO> buscarAparelhosPorUsuario(Long usuarioId) {
+    public Page<AparelhoResponseDTO> buscarAparelhosPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
 
-        return aparelhoRepository.findByUsuario(usuario).stream()
-                .map(this::mapToAparelhoResponseDTO)
-                .collect(Collectors.toList());
+        return aparelhoRepository.findByUsuario(usuario, pageable)
+                .map(this::mapToAparelhoResponseDTO);
     }
 
     private AparelhoResponseDTO mapToAparelhoResponseDTO(Aparelho aparelho) {

@@ -8,11 +8,15 @@ import com.nimbusds.jose.proc.SecurityContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -24,6 +28,7 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.core.annotation.Order;
 
 import javax.sql.DataSource;
 import java.security.KeyPair;
@@ -37,15 +42,25 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final DataSource dataSource;
 
     /**
+     * Define o PasswordEncoder a ser utilizado na aplicação.
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
      * Configuração do SecurityFilterChain para o Authorization Server.
      */
     @Bean
+    @Order(1) // Alta prioridade
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         // Aplica as configurações padrão do Authorization Server
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
@@ -62,15 +77,23 @@ public class SecurityConfig {
     }
 
     /**
-     * Configuração do SecurityFilterChain para a aplicação (Resource Server).
+     * Configuração consolidada do SecurityFilterChain para a aplicação.
      */
     @Bean
+    @Order(2) // Menor prioridade
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Desativa CSRF para APIs RESTful
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
+                        // Permite acesso público para criação de usuários
+                        .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                        // Permite acesso público para endpoints públicos e actuator
                         .requestMatchers("/public/**", "/actuator/**").permitAll()
+                        // Requer autenticação para qualquer outra requisição
                         .anyRequest().authenticated()
                 )
+                // Configura o login via formulário
                 .formLogin(withDefaults());
 
         return http.build();
@@ -80,7 +103,7 @@ public class SecurityConfig {
      * Configuração do RegisteredClientRepository para armazenar os clientes OAuth2.
      */
     @Bean
-    public RegisteredClientRepository registeredClientRepository() {
+    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         JdbcOperations jdbcOperations = new JdbcTemplate(dataSource);
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcOperations);
 
@@ -90,7 +113,7 @@ public class SecurityConfig {
             // Cria e salva um novo cliente registrado
             RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId("prospeco-client")
-                    .clientSecret("{noop}secret") // Use um PasswordEncoder adequado em produção
+                    .clientSecret(passwordEncoder.encode("secret")) // Use um PasswordEncoder adequado
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)

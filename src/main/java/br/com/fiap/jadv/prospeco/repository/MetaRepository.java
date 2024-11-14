@@ -3,6 +3,8 @@ package br.com.fiap.jadv.prospeco.repository;
 
 import br.com.fiap.jadv.prospeco.model.Meta;
 import br.com.fiap.jadv.prospeco.model.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
@@ -18,5 +20,6 @@ public interface MetaRepository extends JpaRepository<Meta, Long> {
      * @param usuario Usuário proprietário das metas.
      * @return Lista de metas do usuário.
      */
-    List<Meta> findByUsuario(Usuario usuario);
+    Page<Meta> findByUsuario(Usuario usuario,
+                             Pageable pageable);
 }

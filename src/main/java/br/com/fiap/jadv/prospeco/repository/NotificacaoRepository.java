@@ -1,10 +1,10 @@
 package br.com.fiap.jadv.prospeco.repository;
 
-
 import br.com.fiap.jadv.prospeco.model.Notificacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
 
 /**
  * <h1>NotificacaoRepository</h1>
@@ -16,9 +16,10 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Long> 
      * Busca as notificações de um usuário, ordenadas pela data e hora de envio.
      *
      * @param usuario Usuário que recebeu as notificações.
-     * @return Lista de notificações do usuário.
+     * @param pageable Objeto de paginação.
+     * @return Página de notificações do usuário.
      */
-    List<Notificacao> findByUsuarioOrderByDataHoraDesc(Usuario usuario);
+    Page<Notificacao> findByUsuarioOrderByDataHoraDesc(Usuario usuario, Pageable pageable);
 
     /**
      * Conta o número de notificações não lidas de um usuário.

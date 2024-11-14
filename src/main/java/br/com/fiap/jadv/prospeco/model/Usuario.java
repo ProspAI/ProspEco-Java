@@ -49,7 +49,13 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(() -> role);
+        return Collections.singleton(() -> {
+            if (role.startsWith("ROLE_")) {
+                return role;
+            } else {
+                return "ROLE_" + role;
+            }
+        });
     }
 
     @Override

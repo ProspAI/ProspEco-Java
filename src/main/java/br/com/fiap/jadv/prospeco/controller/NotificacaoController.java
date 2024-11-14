@@ -5,9 +5,12 @@ import br.com.fiap.jadv.prospeco.dto.response.NotificacaoResponseDTO;
 import br.com.fiap.jadv.prospeco.service.NotificacaoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List;
 
@@ -44,8 +47,9 @@ public class NotificacaoController {
      */
     @GetMapping("/usuarios/{usuarioId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<NotificacaoResponseDTO>> buscarNotificacoesPorUsuario(@PathVariable Long usuarioId) {
-        List<NotificacaoResponseDTO> notificacoes = notificacaoService.buscarNotificacoesPorUsuario(usuarioId);
+    public ResponseEntity<Page<NotificacaoResponseDTO>> buscarNotificacoesPorUsuario(
+            @PathVariable Long usuarioId, Pageable pageable) {
+        Page<NotificacaoResponseDTO> notificacoes = notificacaoService.buscarNotificacoesPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(notificacoes);
     }
 

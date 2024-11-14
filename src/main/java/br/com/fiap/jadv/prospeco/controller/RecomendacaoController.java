@@ -5,11 +5,11 @@ import br.com.fiap.jadv.prospeco.dto.response.RecomendacaoResponseDTO;
 import br.com.fiap.jadv.prospeco.service.RecomendacaoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * <h1>RecomendacaoController</h1>
@@ -40,15 +40,18 @@ public class RecomendacaoController {
     }
 
     /**
-     * Busca todas as recomendações de um usuário específico.
+     * Busca todas as recomendações de um usuário específico com paginação.
      *
      * @param usuarioId ID do usuário.
-     * @return Lista de DTOs de resposta contendo as recomendações do usuário.
+     * @param pageable  Objeto de paginação.
+     * @return Página de DTOs de resposta contendo as recomendações do usuário.
      */
     @GetMapping("/usuarios/{usuarioId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<RecomendacaoResponseDTO>> buscarRecomendacoesPorUsuario(@PathVariable Long usuarioId) {
-        List<RecomendacaoResponseDTO> recomendacoes = recomendacaoService.buscarRecomendacoesPorUsuario(usuarioId);
+    public ResponseEntity<Page<RecomendacaoResponseDTO>> buscarRecomendacoesPorUsuario(
+            @PathVariable Long usuarioId,
+            Pageable pageable) {
+        Page<RecomendacaoResponseDTO> recomendacoes = recomendacaoService.buscarRecomendacoesPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(recomendacoes);
     }
 

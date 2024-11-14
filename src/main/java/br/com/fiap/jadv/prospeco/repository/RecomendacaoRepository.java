@@ -2,6 +2,8 @@ package br.com.fiap.jadv.prospeco.repository;
 
 import br.com.fiap.jadv.prospeco.model.Recomendacao;
 import br.com.fiap.jadv.prospeco.model.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
@@ -17,5 +19,5 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, Long
      * @param usuario Usuário que recebeu as recomendações.
      * @return Lista de recomendações do usuário.
      */
-    List<Recomendacao> findByUsuarioOrderByDataHoraDesc(Usuario usuario);
+    Page<Recomendacao> findByUsuarioOrderByDataHoraDesc(Usuario usuario, Pageable pageable);
 }

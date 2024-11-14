@@ -8,12 +8,12 @@ import br.com.fiap.jadv.prospeco.repository.RecomendacaoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,20 +43,20 @@ public class RecomendacaoService {
         return recomendacaoResponseDTO;
     }
 
-/**
-     * Busca todas as recomendações de um usuário específico.
+    /**
+     * Busca todas as recomendações de um usuário específico com paginação.
      *
      * @param usuarioId ID do usuário.
-     * @return Lista de DTOs de resposta contendo as recomendações do usuário.
+     * @param pageable Objeto de paginação.
+     * @return Página de DTOs de resposta contendo as recomendações do usuário.
      */
     @Transactional(readOnly = true)
-    public List<RecomendacaoResponseDTO> buscarRecomendacoesPorUsuario(Long usuarioId) {
+    public Page<RecomendacaoResponseDTO> buscarRecomendacoesPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
 
-        return recomendacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario).stream()
-                .map(this::mapToRecomendacaoResponseDTO)
-                .collect(Collectors.toList());
+        return recomendacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario, pageable)
+                .map(this::mapToRecomendacaoResponseDTO);
     }
 
     /**
@@ -73,7 +73,12 @@ public class RecomendacaoService {
 
         recomendacao.setMensagem(novaMensagem);
         Recomendacao recomendacaoAtualizada = recomendacaoRepository.save(recomendacao);
-        return mapToRecomendacaoResponseDTO(recomendacaoAtualizada);
+
+        // Enviar atualização para o Kafka
+        RecomendacaoResponseDTO recomendacaoResponseDTO = mapToRecomendacaoResponseDTO(recomendacaoAtualizada);
+        kafkaRecomendacaoProducer.enviarRecomendacao(recomendacaoResponseDTO);
+
+        return recomendacaoResponseDTO;
     }
 
     /**

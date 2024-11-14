@@ -9,12 +9,12 @@ import br.com.fiap.jadv.prospeco.repository.NotificacaoRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,19 +45,19 @@ public class NotificacaoService {
     }
 
     /**
-     * Busca todas as notificações de um usuário específico.
+     * Busca todas as notificações de um usuário específico com paginação.
      *
      * @param usuarioId ID do usuário.
-     * @return Lista de DTOs de resposta contendo as notificações do usuário.
+     * @param pageable Objeto de paginação.
+     * @return Página de DTOs de resposta contendo as notificações do usuário.
      */
     @Transactional(readOnly = true)
-    public List<NotificacaoResponseDTO> buscarNotificacoesPorUsuario(Long usuarioId) {
+    public Page<NotificacaoResponseDTO> buscarNotificacoesPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
 
-        return notificacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario).stream()
-                .map(this::mapToNotificacaoResponseDTO)
-                .collect(Collectors.toList());
+        return notificacaoRepository.findByUsuarioOrderByDataHoraDesc(usuario, pageable)
+                .map(this::mapToNotificacaoResponseDTO);
     }
 
     /**

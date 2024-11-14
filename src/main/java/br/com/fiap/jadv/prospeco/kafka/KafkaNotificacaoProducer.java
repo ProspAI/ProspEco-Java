@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class KafkaNotificacaoProducer {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    // Definindo o KafkaTemplate como tipo específico de NotificacaoRequestDTO
+    private final KafkaTemplate<String, NotificacaoRequestDTO> kafkaTemplate;
     private static final String TOPIC = "notificacao";
 
     public void enviarNotificacao(NotificacaoRequestDTO notificacaoRequestDTO) {

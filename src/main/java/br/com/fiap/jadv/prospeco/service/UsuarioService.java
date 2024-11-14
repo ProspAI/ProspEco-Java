@@ -42,10 +42,23 @@ public class UsuarioService {
         return usuarioResponseDTO;
     }
 
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO buscarUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + id));
+        return mapToUsuarioResponseDTO(usuario);
+    }
+
     @Transactional
     public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO usuarioRequestDTO) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
+
+        // Verifica se o email está sendo alterado e se já existe
+        if (!usuario.getEmail().equals(usuarioRequestDTO.getEmail()) &&
+                usuarioRepository.existsByEmail(usuarioRequestDTO.getEmail())) {
+            throw new IllegalArgumentException("Email já cadastrado.");
+        }
 
         usuario.setNome(usuarioRequestDTO.getNome());
         usuario.setEmail(usuarioRequestDTO.getEmail());
