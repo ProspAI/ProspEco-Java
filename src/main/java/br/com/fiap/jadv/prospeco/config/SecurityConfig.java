@@ -29,27 +29,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // Desabilita CSRF para APIs REST
+                .csrf(csrf -> csrf.disable()) // Desabilita CSRF para APIs REST
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll() // Permite criação de usuário
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll() // Permite login
-                        .requestMatchers("/public/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // Libera Swagger e Actuator
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Libera Swagger
                         .anyRequest().authenticated() // Requer autenticação para demais rotas
                 )
 
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
-                        .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin()) // Permite iframes do mesmo domínio
+                        .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin())
                 )
 
-                .userDetailsService(customUserDetailsService) // Configura UserDetailsService
+                .userDetailsService(customUserDetailsService)
 
-                // Remove exigência de HTTPS para permitir HTTP
-                .requiresChannel(channel -> channel.anyRequest().requiresInsecure())
-
-                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class) // Filtro do Firebase
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Filtro do JWT
+                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
