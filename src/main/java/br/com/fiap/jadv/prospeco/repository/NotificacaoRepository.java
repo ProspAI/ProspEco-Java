@@ -16,7 +16,6 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Long> 
      * Busca as notificações de um usuário, ordenadas pela data e hora de envio.
      *
      * @param usuario Usuário que recebeu as notificações.
-     * @param pageable Objeto de paginação.
      * @return Página de notificações do usuário.
      */
     Page<Notificacao> findByUsuarioOrderByDataHoraDesc(Usuario usuario, Pageable pageable);

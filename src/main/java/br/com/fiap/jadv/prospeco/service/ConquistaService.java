@@ -7,80 +7,140 @@ import br.com.fiap.jadv.prospeco.model.Conquista;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.ConquistaRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Validated
 public class ConquistaService {
 
     private final ConquistaRepository conquistaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaTemplate<String, ConquistaResponseDTO> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
-    @Value("${spring.kafka.topic.conquista-events}")
-    private String conquistaEventsTopic;
+    @Autowired
+    public ConquistaService(ConquistaRepository conquistaRepository,
+                            UsuarioRepository usuarioRepository,
+                            KafkaProducerService kafkaProducerService) {
+        this.conquistaRepository = conquistaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.kafkaProducerService = kafkaProducerService;
+    }
 
     /**
-     * Cria uma nova conquista para um usuário específico e envia um evento ao Kafka.
+     * Lista todas as conquistas de um usuário.
      *
-     * @param requestDTO Dados da nova conquista.
+     * @param usuarioId Identificador do usuário.
+     * @return Lista de ConquistaResponseDTO.
+     */
+    public Page<ConquistaResponseDTO> listarConquistasPorUsuario(Long usuarioId, Pageable pageable) {
+        return conquistaRepository.findByUsuarioId(usuarioId, pageable)
+                .map(this::toResponseDTO);
+    }
+
+
+    /**
+     * Busca uma conquista pelo ID.
+     *
+     * @param id Identificador da conquista.
+     * @return Optional de ConquistaResponseDTO.
+     */
+    public Optional<ConquistaResponseDTO> buscarConquistaPorId(Long id) {
+        return conquistaRepository.findById(id)
+                .map(this::toResponseDTO);
+    }
+
+    /**
+     * Cria uma nova conquista para um usuário.
+     *
+     * @param requestDTO Dados da conquista.
      * @return ConquistaResponseDTO com os dados da conquista criada.
      */
-    @Transactional
     public ConquistaResponseDTO criarConquista(ConquistaRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        Conquista conquista = Conquista.builder()
-                .titulo(requestDTO.getTitulo())
-                .descricao(requestDTO.getDescricao())
-                .dataConquista(LocalDateTime.now())
-                .usuario(usuario)
-                .build();
+        Conquista conquista = new Conquista();
+        BeanUtils.copyProperties(requestDTO, conquista);
+        conquista.setUsuario(usuario);
+        conquista.setDataConquista(LocalDateTime.now());
 
-        conquistaRepository.save(conquista);
+        Conquista novaConquista = conquistaRepository.save(conquista);
 
-        ConquistaResponseDTO response = convertToResponseDTO(conquista);
-        kafkaTemplate.send(conquistaEventsTopic, response);
+        // Enviar evento ao Kafka
+        try {
+            ConquistaResponseDTO responseDTO = toResponseDTO(novaConquista);
+            kafkaProducerService.sendMessage("conquista-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        return response;
+        return toResponseDTO(novaConquista);
     }
 
     /**
-     * Lista conquistas de um usuário específico com suporte a paginação.
+     * Atualiza os dados de uma conquista existente.
      *
-     * @param usuarioId ID do usuário.
-     * @param pageable  Configuração de paginação.
-     * @return Página de ConquistaResponseDTO.
+     * @param id         Identificador da conquista.
+     * @param requestDTO Dados de atualização da conquista.
+     * @return ConquistaResponseDTO com os dados atualizados.
      */
-    public Page<ConquistaResponseDTO> listarConquistasPorUsuario(Long usuarioId, Pageable pageable) {
-        return conquistaRepository.findByUsuarioId(usuarioId, pageable)
-                .map(this::convertToResponseDTO);
+    public ConquistaResponseDTO atualizarConquista(Long id, ConquistaRequestDTO requestDTO) {
+        Conquista conquista = conquistaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Conquista não encontrada"));
+
+        BeanUtils.copyProperties(requestDTO, conquista, "id", "usuario", "dataConquista");
+
+        Conquista conquistaAtualizada = conquistaRepository.save(conquista);
+
+        // Enviar evento ao Kafka
+        try {
+            ConquistaResponseDTO responseDTO = toResponseDTO(conquistaAtualizada);
+            kafkaProducerService.sendMessage("conquista-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return toResponseDTO(conquistaAtualizada);
+    }
+
+    /**
+     * Exclui uma conquista.
+     *
+     * @param id Identificador da conquista.
+     */
+    public void excluirConquista(Long id) {
+        Conquista conquista = conquistaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Conquista não encontrada"));
+
+        conquistaRepository.delete(conquista);
+
+        // Enviar evento ao Kafka
+        try {
+            ConquistaResponseDTO responseDTO = toResponseDTO(conquista);
+            kafkaProducerService.sendMessage("conquista-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Converte uma entidade Conquista para ConquistaResponseDTO.
      *
-     * @param conquista Entidade Conquista a ser convertida.
+     * @param conquista Entidade a ser convertida.
      * @return ConquistaResponseDTO correspondente.
      */
-    private ConquistaResponseDTO convertToResponseDTO(Conquista conquista) {
-        return ConquistaResponseDTO.builder()
-                .id(conquista.getId())
-                .titulo(conquista.getTitulo())
-                .descricao(conquista.getDescricao())
-                .dataConquista(conquista.getDataConquista())
-                .usuarioId(conquista.getUsuario().getId())
-                .build();
+    private ConquistaResponseDTO toResponseDTO(Conquista conquista) {
+        ConquistaResponseDTO responseDTO = new ConquistaResponseDTO();
+        BeanUtils.copyProperties(conquista, responseDTO);
+        responseDTO.setUsuarioId(conquista.getUsuario().getId());
+        return responseDTO;
     }
 }

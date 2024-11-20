@@ -4,68 +4,98 @@ import br.com.fiap.jadv.prospeco.dto.request.NotificacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.NotificacaoResponseDTO;
 import br.com.fiap.jadv.prospeco.service.NotificacaoService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/notificacoes")
-@RequiredArgsConstructor
+@RequestMapping("/api/notificacoes")
 public class NotificacaoController {
 
     private final NotificacaoService notificacaoService;
 
-    /**
-     * Endpoint para criar uma nova notificação para um usuário específico.
-     *
-     * @param requestDTO Dados da nova notificação.
-     * @return ResponseEntity contendo o NotificacaoResponseDTO e o status 201 (Created).
-     */
-    @PostMapping
-    public ResponseEntity<NotificacaoResponseDTO> criarNotificacao(@Valid @RequestBody NotificacaoRequestDTO requestDTO) {
-        NotificacaoResponseDTO responseDTO = notificacaoService.criarNotificacao(requestDTO);
-        return ResponseEntity.status(201).body(responseDTO);
+    @Autowired
+    public NotificacaoController(NotificacaoService notificacaoService) {
+        this.notificacaoService = notificacaoService;
     }
 
     /**
-     * Endpoint para listar notificações de um usuário específico com paginação.
+     * Lista todas as notificações de um usuário.
      *
      * @param usuarioId ID do usuário.
-     * @param pageable  Configuração de paginação.
-     * @return Página de NotificacaoResponseDTO.
+     * @return Lista de NotificacaoResponseDTO.
      */
-    @GetMapping("/usuarios/{usuarioId}")
+    @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<Page<NotificacaoResponseDTO>> listarNotificacoesPorUsuario(
-            @PathVariable Long usuarioId, Pageable pageable) {
-
+            @PathVariable Long usuarioId,
+            @PageableDefault(size = 10) Pageable pageable) {
         Page<NotificacaoResponseDTO> notificacoes = notificacaoService.listarNotificacoesPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(notificacoes);
     }
 
     /**
-     * Endpoint para contar notificações não lidas de um usuário específico.
+     * Busca uma notificação pelo ID.
      *
-     * @param usuarioId ID do usuário.
-     * @return Número de notificações não lidas.
+     * @param id ID da notificação.
+     * @return NotificacaoResponseDTO.
      */
-    @GetMapping("/usuarios/{usuarioId}/nao-lidas")
-    public ResponseEntity<Long> contarNotificacoesNaoLidas(@PathVariable Long usuarioId) {
-        long naoLidas = notificacaoService.contarNotificacoesNaoLidas(usuarioId);
-        return ResponseEntity.ok(naoLidas);
+    @GetMapping("/{id}")
+    public ResponseEntity<NotificacaoResponseDTO> buscarNotificacaoPorId(@PathVariable Long id) {
+        return notificacaoService.buscarNotificacaoPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Endpoint para marcar uma notificação como lida.
+     * Cria uma nova notificação para um usuário.
      *
-     * @param id ID da notificação a ser marcada como lida.
-     * @return ResponseEntity com status 204 (No Content).
+     * @param requestDTO Dados da notificação.
+     * @return NotificacaoResponseDTO com os dados da notificação criada.
+     */
+    @PostMapping
+    public ResponseEntity<NotificacaoResponseDTO> criarNotificacao(@Valid @RequestBody NotificacaoRequestDTO requestDTO) {
+        NotificacaoResponseDTO notificacao = notificacaoService.criarNotificacao(requestDTO);
+        return ResponseEntity.status(201).body(notificacao);
+    }
+
+    /**
+     * Marca uma notificação como lida.
+     *
+     * @param id ID da notificação.
+     * @return Resposta sem conteúdo (204).
      */
     @PatchMapping("/{id}/lida")
     public ResponseEntity<Void> marcarNotificacaoComoLida(@PathVariable Long id) {
         notificacaoService.marcarNotificacaoComoLida(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Exclui uma notificação pelo ID.
+     *
+     * @param id ID da notificação.
+     * @return Resposta sem conteúdo (204).
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluirNotificacao(@PathVariable Long id) {
+        notificacaoService.excluirNotificacao(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Conta o número de notificações não lidas de um usuário.
+     *
+     * @param usuarioId ID do usuário.
+     * @return Número de notificações não lidas.
+     */
+    @GetMapping("/usuario/{usuarioId}/nao-lidas")
+    public ResponseEntity<Long> contarNotificacoesNaoLidas(@PathVariable Long usuarioId) {
+        long naoLidas = notificacaoService.contarNotificacoesNaoLidas(usuarioId);
+        return ResponseEntity.ok(naoLidas);
     }
 }

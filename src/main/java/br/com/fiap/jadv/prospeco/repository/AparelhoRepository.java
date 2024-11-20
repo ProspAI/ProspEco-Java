@@ -13,7 +13,7 @@ public interface AparelhoRepository extends JpaRepository<Aparelho, Long> {
      * Busca aparelhos associados a um usuário específico com suporte a paginação.
      *
      * @param usuarioId ID do usuário proprietário dos aparelhos.
-     * @param pageable  Objeto de paginação.
+     * @param pageable  Configuração de paginação.
      * @return Página contendo os aparelhos do usuário.
      */
     Page<Aparelho> findByUsuarioId(Long usuarioId, Pageable pageable);

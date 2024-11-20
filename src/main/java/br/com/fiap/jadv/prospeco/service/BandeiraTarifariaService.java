@@ -5,93 +5,127 @@ import br.com.fiap.jadv.prospeco.dto.response.BandeiraTarifariaResponseDTO;
 import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.BandeiraTarifaria;
 import br.com.fiap.jadv.prospeco.repository.BandeiraTarifariaRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
-import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Validated
 public class BandeiraTarifariaService {
 
     private final BandeiraTarifariaRepository bandeiraTarifariaRepository;
-    private final KafkaTemplate<String, BandeiraTarifariaResponseDTO> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
-    @Value("${spring.kafka.topic.bandeira-tarifaria-events}")
-    private String bandeiraEventsTopic;
+    @Autowired
+    public BandeiraTarifariaService(BandeiraTarifariaRepository bandeiraTarifariaRepository,
+                                    KafkaProducerService kafkaProducerService) {
+        this.bandeiraTarifariaRepository = bandeiraTarifariaRepository;
+        this.kafkaProducerService = kafkaProducerService;
+    }
+
+    /**
+     * Lista todas as bandeiras tarifárias.
+     *
+     * @return Lista de BandeiraTarifariaResponseDTO.
+     */
+    public List<BandeiraTarifariaResponseDTO> listarTodasBandeiras() {
+        return bandeiraTarifariaRepository.findAll().stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Busca uma bandeira tarifária pelo ID.
+     *
+     * @param id Identificador da bandeira tarifária.
+     * @return Optional de BandeiraTarifariaResponseDTO.
+     */
+    public Optional<BandeiraTarifariaResponseDTO> buscarBandeiraPorId(Long id) {
+        return bandeiraTarifariaRepository.findById(id)
+                .map(this::toResponseDTO);
+    }
 
     /**
      * Cria uma nova bandeira tarifária.
      *
-     * @param requestDTO Dados da bandeira tarifária.
-     * @return BandeiraTarifariaResponseDTO contendo os dados da bandeira criada.
+     * @param requestDTO Dados da bandeira a ser criada.
+     * @return BandeiraTarifariaResponseDTO com os dados da bandeira criada.
      */
-    @Transactional
     public BandeiraTarifariaResponseDTO criarBandeira(BandeiraTarifariaRequestDTO requestDTO) {
-        BandeiraTarifaria bandeira = BandeiraTarifaria.builder()
-                .tipoBandeira(requestDTO.getTipoBandeira())
-                .dataVigencia(requestDTO.getDataVigencia())
-                .build();
+        BandeiraTarifaria bandeira = new BandeiraTarifaria();
+        BeanUtils.copyProperties(requestDTO, bandeira);
 
-        bandeiraTarifariaRepository.save(bandeira);
+        BandeiraTarifaria novaBandeira = bandeiraTarifariaRepository.save(bandeira);
 
-        BandeiraTarifariaResponseDTO response = convertToResponseDTO(bandeira);
-        kafkaTemplate.send(bandeiraEventsTopic, response);
+        // Enviar evento ao Kafka
+        try {
+            BandeiraTarifariaResponseDTO responseDTO = toResponseDTO(novaBandeira);
+            kafkaProducerService.sendMessage("bandeira-tarifaria-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        return response;
+        return toResponseDTO(novaBandeira);
     }
 
     /**
-     * Atualiza uma bandeira tarifária existente.
+     * Atualiza os dados de uma bandeira tarifária existente.
      *
-     * @param id         Identificador da bandeira a ser atualizada.
+     * @param id         Identificador da bandeira tarifária.
      * @param requestDTO Dados de atualização da bandeira.
-     * @return BandeiraTarifariaResponseDTO com os dados da bandeira atualizada.
+     * @return BandeiraTarifariaResponseDTO com os dados atualizados.
      */
-    @Transactional
     public BandeiraTarifariaResponseDTO atualizarBandeira(Long id, BandeiraTarifariaRequestDTO requestDTO) {
         BandeiraTarifaria bandeira = bandeiraTarifariaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bandeira tarifária não encontrada"));
 
         BeanUtils.copyProperties(requestDTO, bandeira, "id");
 
-        bandeiraTarifariaRepository.save(bandeira);
+        BandeiraTarifaria bandeiraAtualizada = bandeiraTarifariaRepository.save(bandeira);
 
-        BandeiraTarifariaResponseDTO response = convertToResponseDTO(bandeira);
-        kafkaTemplate.send(bandeiraEventsTopic, response);
+        // Enviar evento ao Kafka
+        try {
+            BandeiraTarifariaResponseDTO responseDTO = toResponseDTO(bandeiraAtualizada);
+            kafkaProducerService.sendMessage("bandeira-tarifaria-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        return response;
+        return toResponseDTO(bandeiraAtualizada);
     }
 
     /**
-     * Obtém a bandeira tarifária para uma data específica.
+     * Exclui uma bandeira tarifária.
      *
-     * @param dataVigencia Data para a qual buscar a bandeira.
-     * @return BandeiraTarifariaResponseDTO com os dados da bandeira encontrada.
+     * @param id Identificador da bandeira a ser excluída.
      */
-    public Optional<BandeiraTarifariaResponseDTO> obterBandeiraPorData(LocalDate dataVigencia) {
-        return bandeiraTarifariaRepository.findByDataVigencia(dataVigencia)
-                .map(this::convertToResponseDTO);
+    public void excluirBandeira(Long id) {
+        BandeiraTarifaria bandeira = bandeiraTarifariaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Bandeira tarifária não encontrada"));
+
+        bandeiraTarifariaRepository.delete(bandeira);
+
+        // Enviar evento ao Kafka
+        try {
+            BandeiraTarifariaResponseDTO responseDTO = toResponseDTO(bandeira);
+            kafkaProducerService.sendMessage("bandeira-tarifaria-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Converte uma BandeiraTarifaria para BandeiraTarifariaResponseDTO.
+     * Converte uma entidade BandeiraTarifaria para BandeiraTarifariaResponseDTO.
      *
-     * @param bandeira Bandeira a ser convertida.
+     * @param bandeira Entidade a ser convertida.
      * @return BandeiraTarifariaResponseDTO correspondente.
      */
-    private BandeiraTarifariaResponseDTO convertToResponseDTO(BandeiraTarifaria bandeira) {
-        return BandeiraTarifariaResponseDTO.builder()
-                .id(bandeira.getId())
-                .tipoBandeira(bandeira.getTipoBandeira())
-                .dataVigencia(bandeira.getDataVigencia())
-                .build();
+    private BandeiraTarifariaResponseDTO toResponseDTO(BandeiraTarifaria bandeira) {
+        BandeiraTarifariaResponseDTO responseDTO = new BandeiraTarifariaResponseDTO();
+        BeanUtils.copyProperties(bandeira, responseDTO);
+        return responseDTO;
     }
 }

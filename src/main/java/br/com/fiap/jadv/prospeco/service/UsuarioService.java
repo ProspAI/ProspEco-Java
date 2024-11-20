@@ -5,139 +5,160 @@ import br.com.fiap.jadv.prospeco.dto.response.UsuarioResponseDTO;
 import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Validated
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final KafkaTemplate<String, UsuarioResponseDTO> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
-    @Value("${spring.kafka.topic.usuario-events}")
-    private String usuarioEventsTopic;
+    @Autowired
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          PasswordEncoder passwordEncoder,
+                          KafkaProducerService kafkaProducerService) {
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.kafkaProducerService = kafkaProducerService;
+    }
 
     /**
-     * Cria um novo usuário e envia um evento ao Kafka.
+     * Lista todos os usuários.
      *
-     * @param requestDTO Dados do usuário a ser criado.
-     * @return UsuarioResponseDTO com os dados do usuário criado.
+     * @return Lista de UsuarioResponseDTO.
      */
-    @Transactional
-    public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO requestDTO) {
-        if (usuarioRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new IllegalArgumentException("O email já está em uso.");
-        }
-
-        Usuario usuario = Usuario.builder()
-                .nome(requestDTO.getNome())
-                .email(requestDTO.getEmail())
-                .senha(passwordEncoder.encode(requestDTO.getSenha()))
-                .role("ROLE_USER")
-                .pontuacaoEconomia(0.0)
-                .build();
-
-        usuarioRepository.save(usuario);
-
-        UsuarioResponseDTO response = convertToResponseDTO(usuario);
-        kafkaTemplate.send(usuarioEventsTopic, response);
-
-        return response;
+    public List<UsuarioResponseDTO> listarTodosUsuarios() {
+        return usuarioRepository.findAll().stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     /**
      * Busca um usuário pelo ID.
      *
      * @param id ID do usuário.
-     * @return UsuarioResponseDTO com os dados do usuário encontrado.
+     * @return Optional de UsuarioResponseDTO.
      */
-    public UsuarioResponseDTO buscarUsuarioPorId(Long id) {
+    public Optional<UsuarioResponseDTO> buscarUsuarioPorId(Long id) {
+        return usuarioRepository.findById(id)
+                .map(this::toResponseDTO);
+    }
+
+    /**
+     * Cria um novo usuário.
+     *
+     * @param requestDTO Dados do usuário.
+     * @return UsuarioResponseDTO com os dados do usuário criado.
+     */
+    public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO requestDTO) {
+        if (usuarioRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new IllegalArgumentException("O email já está em uso.");
+        }
+
+        Usuario usuario = new Usuario();
+        BeanUtils.copyProperties(requestDTO, usuario);
+        usuario.setSenha(passwordEncoder.encode(requestDTO.getSenha()));
+        usuario.setRole("ROLE_USER"); // Define o papel padrão
+        usuario.setPontuacaoEconomia(0.0);
+
+        Usuario novoUsuario = usuarioRepository.save(usuario);
+
+        // Enviar evento ao Kafka
+        try {
+            UsuarioResponseDTO responseDTO = toResponseDTO(novoUsuario);
+            kafkaProducerService.sendMessage("usuario-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return toResponseDTO(novoUsuario);
+    }
+
+    /**
+     * Atualiza os dados de um usuário existente.
+     *
+     * @param id         ID do usuário.
+     * @param requestDTO Dados atualizados do usuário.
+     * @return UsuarioResponseDTO com os dados atualizados.
+     */
+    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO requestDTO) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        return convertToResponseDTO(usuario);
+        if (!usuario.getEmail().equals(requestDTO.getEmail()) &&
+                usuarioRepository.existsByEmail(requestDTO.getEmail())) {
+            throw new IllegalArgumentException("O email já está em uso.");
+        }
+
+        usuario.setNome(requestDTO.getNome());
+        usuario.setEmail(requestDTO.getEmail());
+
+        if (requestDTO.getSenha() != null && !requestDTO.getSenha().isEmpty()) {
+            usuario.setSenha(passwordEncoder.encode(requestDTO.getSenha()));
+        }
+
+        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
+
+        // Enviar evento ao Kafka
+        try {
+            UsuarioResponseDTO responseDTO = toResponseDTO(usuarioAtualizado);
+            kafkaProducerService.sendMessage("usuario-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return toResponseDTO(usuarioAtualizado);
     }
 
     /**
      * Busca um usuário pelo email.
      *
      * @param email Email do usuário.
-     * @return UsuarioResponseDTO com os dados do usuário encontrado.
+     * @return UsuarioResponseDTO com os dados do usuário.
      */
     public UsuarioResponseDTO buscarUsuarioPorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o email: " + email));
-
-        return convertToResponseDTO(usuario);
+        return toResponseDTO(usuario);
     }
 
     /**
-     * Atualiza os dados de um usuário existente e envia um evento ao Kafka.
+     * Exclui um usuário.
      *
-     * @param id         ID do usuário a ser atualizado.
-     * @param requestDTO Dados de atualização do usuário.
-     * @return UsuarioResponseDTO com os dados do usuário atualizado.
+     * @param id ID do usuário.
      */
-    @Transactional
-    public UsuarioResponseDTO atualizarUsuario(Long id, UsuarioRequestDTO requestDTO) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-
-        if (!usuario.getEmail().equals(requestDTO.getEmail()) && usuarioRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new IllegalArgumentException("O email já está em uso.");
-        }
-
-        usuario.setNome(requestDTO.getNome());
-        usuario.setEmail(requestDTO.getEmail());
-        usuario.setSenha(passwordEncoder.encode(requestDTO.getSenha()));
-
-        usuarioRepository.save(usuario);
-
-        UsuarioResponseDTO response = convertToResponseDTO(usuario);
-        kafkaTemplate.send(usuarioEventsTopic, response);
-
-        return response;
-    }
-
-    /**
-     * Exclui um usuário pelo ID e envia um evento ao Kafka.
-     *
-     * @param id ID do usuário a ser excluído.
-     */
-    @Transactional
     public void excluirUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        UsuarioResponseDTO response = convertToResponseDTO(usuario);
         usuarioRepository.delete(usuario);
 
-        kafkaTemplate.send(usuarioEventsTopic, response);
+        // Enviar evento ao Kafka
+        try {
+            UsuarioResponseDTO responseDTO = toResponseDTO(usuario);
+            kafkaProducerService.sendMessage("usuario-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Converte uma entidade Usuario para UsuarioResponseDTO.
      *
-     * @param usuario Entidade Usuario a ser convertida.
+     * @param usuario Entidade a ser convertida.
      * @return UsuarioResponseDTO correspondente.
      */
-    private UsuarioResponseDTO convertToResponseDTO(Usuario usuario) {
-        return UsuarioResponseDTO.builder()
-                .id(usuario.getId())
-                .nome(usuario.getNome())
-                .email(usuario.getEmail())
-                .pontuacaoEconomia(usuario.getPontuacaoEconomia())
-                .build();
+    private UsuarioResponseDTO toResponseDTO(Usuario usuario) {
+        UsuarioResponseDTO responseDTO = new UsuarioResponseDTO();
+        BeanUtils.copyProperties(usuario, responseDTO);
+        return responseDTO;
     }
 }

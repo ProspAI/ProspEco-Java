@@ -4,65 +4,83 @@ import br.com.fiap.jadv.prospeco.dto.request.BandeiraTarifariaRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.BandeiraTarifariaResponseDTO;
 import br.com.fiap.jadv.prospeco.service.BandeiraTarifariaService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bandeiras-tarifarias")
-@RequiredArgsConstructor
 public class BandeiraTarifariaController {
 
     private final BandeiraTarifariaService bandeiraTarifariaService;
 
+    @Autowired
+    public BandeiraTarifariaController(BandeiraTarifariaService bandeiraTarifariaService) {
+        this.bandeiraTarifariaService = bandeiraTarifariaService;
+    }
+
     /**
-     * Endpoint para criar uma nova bandeira tarifária.
+     * Lista todas as bandeiras tarifárias.
      *
-     * @param requestDTO Dados da bandeira tarifária.
-     * @return ResponseEntity contendo o BandeiraTarifariaResponseDTO e o status 201 (Created).
+     * @return Lista de BandeiraTarifariaResponseDTO.
+     */
+    @GetMapping
+    public ResponseEntity<List<BandeiraTarifariaResponseDTO>> listarTodasBandeiras() {
+        List<BandeiraTarifariaResponseDTO> bandeiras = bandeiraTarifariaService.listarTodasBandeiras();
+        return ResponseEntity.ok(bandeiras);
+    }
+
+    /**
+     * Busca uma bandeira tarifária pelo ID.
+     *
+     * @param id ID da bandeira tarifária.
+     * @return BandeiraTarifariaResponseDTO.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<BandeiraTarifariaResponseDTO> buscarBandeiraPorId(@PathVariable Long id) {
+        return bandeiraTarifariaService.buscarBandeiraPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Cria uma nova bandeira tarifária.
+     *
+     * @param requestDTO Dados da bandeira tarifária a ser criada.
+     * @return BandeiraTarifariaResponseDTO com os dados da bandeira criada.
      */
     @PostMapping
-    public ResponseEntity<BandeiraTarifariaResponseDTO> criarBandeira(
-            @Valid @RequestBody BandeiraTarifariaRequestDTO requestDTO) {
-
-        BandeiraTarifariaResponseDTO response = bandeiraTarifariaService.criarBandeira(requestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<BandeiraTarifariaResponseDTO> criarBandeira(@Valid @RequestBody BandeiraTarifariaRequestDTO requestDTO) {
+        BandeiraTarifariaResponseDTO bandeira = bandeiraTarifariaService.criarBandeira(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(bandeira);
     }
 
     /**
-     * Endpoint para atualizar uma bandeira tarifária existente.
+     * Atualiza os dados de uma bandeira tarifária existente.
      *
-     * @param id         Identificador da bandeira a ser atualizada.
+     * @param id         ID da bandeira tarifária.
      * @param requestDTO Dados de atualização da bandeira tarifária.
-     * @return ResponseEntity contendo o BandeiraTarifariaResponseDTO atualizado e o status 200 (OK).
+     * @return BandeiraTarifariaResponseDTO com os dados atualizados.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<BandeiraTarifariaResponseDTO> atualizarBandeira(
-            @PathVariable Long id,
-            @Valid @RequestBody BandeiraTarifariaRequestDTO requestDTO) {
-
-        BandeiraTarifariaResponseDTO response = bandeiraTarifariaService.atualizarBandeira(id, requestDTO);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<BandeiraTarifariaResponseDTO> atualizarBandeira(@PathVariable Long id,
+                                                                          @Valid @RequestBody BandeiraTarifariaRequestDTO requestDTO) {
+        BandeiraTarifariaResponseDTO bandeiraAtualizada = bandeiraTarifariaService.atualizarBandeira(id, requestDTO);
+        return ResponseEntity.ok(bandeiraAtualizada);
     }
 
     /**
-     * Endpoint para obter a bandeira tarifária vigente para uma data específica.
+     * Exclui uma bandeira tarifária.
      *
-     * @param dataVigencia Data para a qual buscar a bandeira tarifária.
-     * @return ResponseEntity contendo o BandeiraTarifariaResponseDTO e o status 200 (OK) ou 404 (Not Found).
+     * @param id ID da bandeira tarifária.
+     * @return Resposta sem conteúdo (204).
      */
-    @GetMapping("/vigencia")
-    public ResponseEntity<BandeiraTarifariaResponseDTO> obterBandeiraPorData(
-            @RequestParam("data") LocalDate dataVigencia) {
-
-        Optional<BandeiraTarifariaResponseDTO> bandeiraResponse = bandeiraTarifariaService.obterBandeiraPorData(dataVigencia);
-
-        return bandeiraResponse
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluirBandeira(@PathVariable Long id) {
+        bandeiraTarifariaService.excluirBandeira(id);
+        return ResponseEntity.noContent().build();
     }
 }

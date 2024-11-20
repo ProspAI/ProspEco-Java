@@ -4,67 +4,85 @@ import br.com.fiap.jadv.prospeco.dto.request.MetaRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.MetaResponseDTO;
 import br.com.fiap.jadv.prospeco.service.MetaService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/metas")
-@RequiredArgsConstructor
+@RequestMapping("/api/metas")
 public class MetaController {
 
     private final MetaService metaService;
 
-    /**
-     * Endpoint para criar uma nova meta para o usuário autenticado.
-     *
-     * @param metaRequestDTO Dados da nova meta de consumo.
-     * @return ResponseEntity contendo o MetaResponseDTO e o status 201 (Created).
-     */
-    @PostMapping
-    public ResponseEntity<MetaResponseDTO> criarMeta(@Valid @RequestBody MetaRequestDTO metaRequestDTO) {
-        MetaResponseDTO responseDTO = metaService.criarMeta(metaRequestDTO);
-        return ResponseEntity.status(201).body(responseDTO);
+    @Autowired
+    public MetaController(MetaService metaService) {
+        this.metaService = metaService;
     }
 
     /**
-     * Endpoint para buscar metas de um usuário específico com paginação.
+     * Lista todas as metas de um usuário.
      *
      * @param usuarioId ID do usuário.
-     * @param pageable  Configuração de paginação.
-     * @return Página de MetaResponseDTO.
+     * @return Lista de MetaResponseDTO.
      */
-    @GetMapping("/usuarios/{usuarioId}")
-    public ResponseEntity<Page<MetaResponseDTO>> buscarMetasPorUsuario(
-            @PathVariable Long usuarioId, Pageable pageable) {
-
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<Page<MetaResponseDTO>> listarMetasPorUsuario(
+            @PathVariable Long usuarioId,
+            @PageableDefault(size = 10) Pageable pageable) {
         Page<MetaResponseDTO> metas = metaService.listarMetasPorUsuario(usuarioId, pageable);
         return ResponseEntity.ok(metas);
     }
 
     /**
-     * Endpoint para atualizar uma meta existente.
+     * Busca uma meta pelo ID.
      *
-     * @param id             ID da meta a ser atualizada.
-     * @param metaRequestDTO Dados de atualização da meta.
-     * @return ResponseEntity contendo o MetaResponseDTO atualizado.
+     * @param id ID da meta.
+     * @return MetaResponseDTO.
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<MetaResponseDTO> atualizarMeta(
-            @PathVariable Long id, @Valid @RequestBody MetaRequestDTO metaRequestDTO) {
-
-        MetaResponseDTO responseDTO = metaService.atualizarMeta(id, metaRequestDTO);
-        return ResponseEntity.ok(responseDTO);
+    @GetMapping("/{id}")
+    public ResponseEntity<MetaResponseDTO> buscarMetaPorId(@PathVariable Long id) {
+        return metaService.buscarMetaPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Endpoint para excluir uma meta existente.
+     * Cria uma nova meta.
      *
-     * @param id ID da meta a ser excluída.
-     * @return ResponseEntity com status 204 (No Content).
+     * @param requestDTO Dados da meta a ser criada.
+     * @return MetaResponseDTO com os dados da meta criada.
+     */
+    @PostMapping
+    public ResponseEntity<MetaResponseDTO> criarMeta(@Valid @RequestBody MetaRequestDTO requestDTO) {
+        MetaResponseDTO meta = metaService.criarMeta(requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(meta);
+    }
+
+    /**
+     * Atualiza os dados de uma meta existente.
+     *
+     * @param id         ID da meta.
+     * @param requestDTO Dados de atualização da meta.
+     * @return MetaResponseDTO com os dados atualizados.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<MetaResponseDTO> atualizarMeta(@PathVariable Long id,
+                                                         @Valid @RequestBody MetaRequestDTO requestDTO) {
+        MetaResponseDTO metaAtualizada = metaService.atualizarMeta(id, requestDTO);
+        return ResponseEntity.ok(metaAtualizada);
+    }
+
+    /**
+     * Exclui uma meta existente.
+     *
+     * @param id ID da meta.
+     * @return Resposta sem conteúdo (204).
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluirMeta(@PathVariable Long id) {
@@ -73,14 +91,14 @@ public class MetaController {
     }
 
     /**
-     * Endpoint para marcar uma meta como atingida.
+     * Marca uma meta como atingida.
      *
-     * @param id ID da meta a ser marcada como atingida.
-     * @return ResponseEntity com status 204 (No Content).
+     * @param id ID da meta.
+     * @return Resposta com os dados da meta marcada como atingida.
      */
     @PatchMapping("/{id}/atingida")
-    public ResponseEntity<Void> marcarMetaComoAtingida(@PathVariable Long id) {
+    public ResponseEntity<MetaResponseDTO> marcarMetaComoAtingida(@PathVariable Long id) {
         metaService.marcarMetaComoAtingida(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 }

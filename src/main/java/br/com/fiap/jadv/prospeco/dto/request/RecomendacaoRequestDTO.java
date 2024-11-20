@@ -15,10 +15,10 @@ import lombok.*;
 public class RecomendacaoRequestDTO {
 
     /**
-     * Mensagem da recomendação.
+     * Nome do aparelho para o qual a recomendação será gerada.
      */
-    @NotBlank(message = "A mensagem é obrigatória.")
-    private String mensagem;
+    @NotBlank(message = "O nome do aparelho é obrigatório.")
+    private String aparelho;
 
     /**
      * Identificador do usuário que receberá a recomendação.

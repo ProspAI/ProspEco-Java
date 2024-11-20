@@ -4,63 +4,78 @@ import br.com.fiap.jadv.prospeco.dto.request.UsuarioRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.UsuarioResponseDTO;
 import br.com.fiap.jadv.prospeco.service.UsuarioService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    /**
-     * Endpoint para criar um novo usuário.
-     *
-     * @param requestDTO Dados do novo usuário.
-     * @return ResponseEntity contendo o UsuarioResponseDTO e o status 201 (Created).
-     */
-    @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@Valid @RequestBody UsuarioRequestDTO requestDTO) {
-        UsuarioResponseDTO responseDTO = usuarioService.criarUsuario(requestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    @Autowired
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
     }
 
     /**
-     * Endpoint para buscar um usuário pelo ID.
+     * Lista todos os usuários.
+     *
+     * @return Lista de UsuarioResponseDTO.
+     */
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponseDTO>> listarTodosUsuarios() {
+        List<UsuarioResponseDTO> usuarios = usuarioService.listarTodosUsuarios();
+        return ResponseEntity.ok(usuarios);
+    }
+
+    /**
+     * Busca um usuário pelo ID.
      *
      * @param id ID do usuário.
-     * @return ResponseEntity contendo o UsuarioResponseDTO e o status 200 (OK).
+     * @return UsuarioResponseDTO.
      */
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> buscarUsuarioPorId(@PathVariable Long id) {
-        UsuarioResponseDTO responseDTO = usuarioService.buscarUsuarioPorId(id);
-        return ResponseEntity.ok(responseDTO);
+        return usuarioService.buscarUsuarioPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Endpoint para atualizar os dados de um usuário.
+     * Cria um novo usuário.
      *
-     * @param id         ID do usuário a ser atualizado.
-     * @param requestDTO Dados de atualização do usuário.
-     * @return ResponseEntity contendo o UsuarioResponseDTO atualizado e o status 200 (OK).
+     * @param requestDTO Dados do usuário.
+     * @return UsuarioResponseDTO com os dados do usuário criado.
+     */
+    @PostMapping
+    public ResponseEntity<UsuarioResponseDTO> criarUsuario(@Valid @RequestBody UsuarioRequestDTO requestDTO) {
+        UsuarioResponseDTO usuario = usuarioService.criarUsuario(requestDTO);
+        return ResponseEntity.status(201).body(usuario);
+    }
+
+    /**
+     * Atualiza os dados de um usuário existente.
+     *
+     * @param id         ID do usuário.
+     * @param requestDTO Dados atualizados do usuário.
+     * @return UsuarioResponseDTO com os dados atualizados.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(
-            @PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO requestDTO) {
-
-        UsuarioResponseDTO responseDTO = usuarioService.atualizarUsuario(id, requestDTO);
-        return ResponseEntity.ok(responseDTO);
+    public ResponseEntity<UsuarioResponseDTO> atualizarUsuario(@PathVariable Long id,
+                                                               @Valid @RequestBody UsuarioRequestDTO requestDTO) {
+        UsuarioResponseDTO usuarioAtualizado = usuarioService.atualizarUsuario(id, requestDTO);
+        return ResponseEntity.ok(usuarioAtualizado);
     }
 
     /**
-     * Endpoint para excluir um usuário pelo ID.
+     * Exclui um usuário.
      *
-     * @param id ID do usuário a ser excluído.
-     * @return ResponseEntity com status 204 (No Content).
+     * @param id ID do usuário.
+     * @return Resposta sem conteúdo (204).
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluirUsuario(@PathVariable Long id) {

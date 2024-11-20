@@ -7,139 +7,160 @@ import br.com.fiap.jadv.prospeco.model.Meta;
 import br.com.fiap.jadv.prospeco.model.Usuario;
 import br.com.fiap.jadv.prospeco.repository.MetaRepository;
 import br.com.fiap.jadv.prospeco.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
-import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Validated
 public class MetaService {
 
     private final MetaRepository metaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final KafkaTemplate<String, MetaResponseDTO> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
-    @Value("${spring.kafka.topic.meta-events}")
-    private String metaEventsTopic;
-
-    /**
-     * Cria uma nova meta de consumo para um usuário específico e envia um evento ao Kafka.
-     *
-     * @param requestDTO Dados da nova meta.
-     * @return MetaResponseDTO com os dados da meta criada.
-     */
-    @Transactional
-    public MetaResponseDTO criarMeta(MetaRequestDTO requestDTO) {
-        Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-
-        Meta meta = Meta.builder()
-                .consumoAlvo(requestDTO.getConsumoAlvo())
-                .dataInicio(requestDTO.getDataInicio())
-                .dataFim(requestDTO.getDataFim())
-                .usuario(usuario)
-                .atingida(false)
-                .build();
-
-        metaRepository.save(meta);
-
-        MetaResponseDTO response = convertToResponseDTO(meta);
-        kafkaTemplate.send(metaEventsTopic, response);
-
-        return response;
+    @Autowired
+    public MetaService(MetaRepository metaRepository, UsuarioRepository usuarioRepository, KafkaProducerService kafkaProducerService) {
+        this.metaRepository = metaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     /**
-     * Atualiza uma meta existente e envia um evento ao Kafka.
-     *
-     * @param id         ID da meta a ser atualizada.
-     * @param requestDTO Dados de atualização da meta.
-     * @return MetaResponseDTO com os dados da meta atualizada.
-     */
-    @Transactional
-    public MetaResponseDTO atualizarMeta(Long id, MetaRequestDTO requestDTO) {
-        Meta meta = metaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meta não encontrada"));
-
-        meta.setConsumoAlvo(requestDTO.getConsumoAlvo());
-        meta.setDataInicio(requestDTO.getDataInicio());
-        meta.setDataFim(requestDTO.getDataFim());
-        metaRepository.save(meta);
-
-        MetaResponseDTO response = convertToResponseDTO(meta);
-        kafkaTemplate.send(metaEventsTopic, response);
-
-        return response;
-    }
-
-    /**
-     * Lista as metas de um usuário específico com suporte a paginação.
+     * Lista todas as metas de um usuário.
      *
      * @param usuarioId ID do usuário.
-     * @param pageable  Configuração de paginação.
-     * @return Página de MetaResponseDTO.
+     * @return Lista de MetaResponseDTO.
      */
     public Page<MetaResponseDTO> listarMetasPorUsuario(Long usuarioId, Pageable pageable) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         return metaRepository.findByUsuario(usuario, pageable)
-                .map(this::convertToResponseDTO);
+                .map(this::toResponseDTO);
     }
 
     /**
-     * Exclui uma meta e envia um evento ao Kafka.
+     * Busca uma meta pelo ID.
      *
-     * @param id ID da meta a ser excluída.
+     * @param id ID da meta.
+     * @return Optional de MetaResponseDTO.
      */
-    @Transactional
+    public Optional<MetaResponseDTO> buscarMetaPorId(Long id) {
+        return metaRepository.findById(id)
+                .map(this::toResponseDTO);
+    }
+
+    /**
+     * Cria uma nova meta para um usuário.
+     *
+     * @param requestDTO Dados da meta a ser criada.
+     * @return MetaResponseDTO com os dados da meta criada.
+     */
+    public MetaResponseDTO criarMeta(MetaRequestDTO requestDTO) {
+        Usuario usuario = usuarioRepository.findById(requestDTO.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+
+        Meta meta = new Meta();
+        BeanUtils.copyProperties(requestDTO, meta);
+        meta.setUsuario(usuario);
+        meta.setAtingida(false);
+
+        Meta novaMeta = metaRepository.save(meta);
+
+        // Enviar evento ao Kafka
+        try {
+            MetaResponseDTO responseDTO = toResponseDTO(novaMeta);
+            kafkaProducerService.sendMessage("meta-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return toResponseDTO(novaMeta);
+    }
+
+    /**
+     * Atualiza os dados de uma meta existente.
+     *
+     * @param id         ID da meta.
+     * @param requestDTO Dados de atualização da meta.
+     * @return MetaResponseDTO com os dados atualizados.
+     */
+    public MetaResponseDTO atualizarMeta(Long id, MetaRequestDTO requestDTO) {
+        Meta meta = metaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Meta não encontrada"));
+
+        BeanUtils.copyProperties(requestDTO, meta, "id", "usuario", "atingida");
+
+        Meta metaAtualizada = metaRepository.save(meta);
+
+        // Enviar evento ao Kafka
+        try {
+            MetaResponseDTO responseDTO = toResponseDTO(metaAtualizada);
+            kafkaProducerService.sendMessage("meta-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return toResponseDTO(metaAtualizada);
+    }
+
+    /**
+     * Exclui uma meta existente.
+     *
+     * @param id ID da meta.
+     */
     public void excluirMeta(Long id) {
         Meta meta = metaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Meta não encontrada"));
 
         metaRepository.delete(meta);
-        kafkaTemplate.send(metaEventsTopic, convertToResponseDTO(meta));
+
+        // Enviar evento ao Kafka
+        try {
+            MetaResponseDTO responseDTO = toResponseDTO(meta);
+            kafkaProducerService.sendMessage("meta-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Marca uma meta como atingida e envia um evento ao Kafka.
+     * Marca uma meta como atingida.
      *
-     * @param id ID da meta a ser marcada como atingida.
+     * @param id ID da meta.
      */
-    @Transactional
     public void marcarMetaComoAtingida(Long id) {
         Meta meta = metaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Meta não encontrada"));
 
         meta.setAtingida(true);
-        metaRepository.save(meta);
+        Meta metaAtingida = metaRepository.save(meta);
 
-        MetaResponseDTO response = convertToResponseDTO(meta);
-        kafkaTemplate.send(metaEventsTopic, response);
+        // Enviar evento ao Kafka
+        try {
+            MetaResponseDTO responseDTO = toResponseDTO(metaAtingida);
+            kafkaProducerService.sendMessage("meta-events", responseDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Converte uma entidade Meta para MetaResponseDTO.
      *
-     * @param meta Entidade Meta a ser convertida.
+     * @param meta Entidade a ser convertida.
      * @return MetaResponseDTO correspondente.
      */
-    private MetaResponseDTO convertToResponseDTO(Meta meta) {
-        return MetaResponseDTO.builder()
-                .id(meta.getId())
-                .consumoAlvo(meta.getConsumoAlvo())
-                .dataInicio(meta.getDataInicio())
-                .dataFim(meta.getDataFim())
-                .atingida(meta.getAtingida())
-                .usuarioId(meta.getUsuario().getId())
-                .build();
+    private MetaResponseDTO toResponseDTO(Meta meta) {
+        MetaResponseDTO responseDTO = new MetaResponseDTO();
+        BeanUtils.copyProperties(meta, responseDTO);
+        responseDTO.setUsuarioId(meta.getUsuario().getId());
+        return responseDTO;
     }
 }

@@ -5,7 +5,6 @@ import br.com.fiap.jadv.prospeco.model.Usuario;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
 
 /**
  * <h1>RecomendacaoRepository</h1>
