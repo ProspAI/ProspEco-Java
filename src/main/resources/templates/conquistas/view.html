@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Detalhes da Conquista</title>
+</head>
+<body>
+<h1>Detalhes da Conquista</h1>
+
+<div>
+    <p><strong>ID:</strong> <span th:text="${conquista.id}"></span></p>
+    <p><strong>Título:</strong> <span th:text="${conquista.titulo}"></span></p>
+    <p><strong>Descrição:</strong> <span th:text="${conquista.descricao}"></span></p>
+    <p><strong>Data da Conquista:</strong> <span th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy HH:mm')}"></span></p>
+    <p><strong>ID do Usuário:</strong> <span th:text="${conquista.usuarioId}"></span></p>
+</div>
+
+<a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}">Editar</a>
+<a th:href="@{/conquistas/{id}/excluir(id=${conquista.id})}">Excluir</a>
+<a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${conquista.usuarioId})}">Voltar</a>
+</body>
+</html>

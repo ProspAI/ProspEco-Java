@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Aparelhos</title>
+</head>
+<body>
+<h1>Aparelhos do Usuário</h1>
+
+<a th:href="@{/aparelhos/usuario/{usuarioId}/novo(usuarioId=${usuarioId})}">Novo Aparelho</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Potência</th>
+        <th>Tipo</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="aparelho : ${aparelhos.content}">
+        <td th:text="${aparelho.id}"></td>
+        <td th:text="${aparelho.nome}"></td>
+        <td th:text="${aparelho.potencia}"></td>
+        <td th:text="${aparelho.tipo}"></td>
+        <td>
+            <a th:href="@{/aparelhos/{id}(id=${aparelho.id})}">Ver</a>
+            <a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}">Editar</a>
+            <a th:href="@{/aparelhos/{id}/excluir(id=${aparelho.id})}">Excluir</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Paginação -->
+<div>
+    <span th:text="'Página ' + ${aparelhos.number + 1} + ' de ' + ${aparelhos.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${aparelhos.hasPrevious()}">
+                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number - 1})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, aparelhos.totalPages)}">
+                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+                   th:text="${i}"
+                   th:classappend="${aparelhos.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${aparelhos.hasNext()}">
+                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number + 1})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

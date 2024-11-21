@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Conquistas</title>
+</head>
+<body>
+<h1>Conquistas do Usuário</h1>
+
+<a th:href="@{/conquistas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Conquista</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Descrição</th>
+        <th>Data da Conquista</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="conquista : ${conquistas.content}">
+        <td th:text="${conquista.id}"></td>
+        <td th:text="${conquista.titulo}"></td>
+        <td th:text="${conquista.descricao}"></td>
+        <td th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy HH:mm')}"></td>
+        <td>
+            <a th:href="@{/conquistas/{id}(id=${conquista.id})}">Ver</a>
+            <a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}">Editar</a>
+            <a th:href="@{/conquistas/{id}/excluir(id=${conquista.id})}">Excluir</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<div>
+    <span th:text="'Página ' + ${conquistas.number + 1} + ' de ' + ${conquistas.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${conquistas.hasPrevious()}">
+                <a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${conquistas.number - 1})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, conquistas.totalPages)}">
+                <a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+                   th:text="${i}"
+                   th:classappend="${conquistas.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${conquistas.hasNext()}">
+                <a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${conquistas.number + 1})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

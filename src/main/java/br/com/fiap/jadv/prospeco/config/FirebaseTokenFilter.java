@@ -22,6 +22,13 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(FirebaseTokenFilter.class);
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+        // Não filtra as requisições que não começam com /api/
+        return !path.startsWith("/api/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 

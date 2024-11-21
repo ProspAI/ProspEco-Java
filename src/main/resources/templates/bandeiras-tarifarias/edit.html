@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Editar Bandeira Tarifária</title>
+</head>
+<body>
+<h1>Editar Bandeira Tarifária</h1>
+
+<form th:action="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}" th:object="${bandeira}" method="post">
+    <div>
+        <label for="tipoBandeira">Tipo de Bandeira:</label>
+        <select id="tipoBandeira" th:field="*{tipoBandeira}">
+            <option th:each="tipo : ${tiposBandeira}" th:value="${tipo}" th:text="${tipo}"
+                    th:selected="${tipo} == ${bandeira.tipoBandeira}"></option>
+        </select>
+        <div th:if="${#fields.hasErrors('tipoBandeira')}" th:errors="*{tipoBandeira}"></div>
+    </div>
+    <div>
+        <label for="dataVigencia">Data de Vigência:</label>
+        <input type="date" id="dataVigencia" th:field="*{dataVigencia}" />
+        <div th:if="${#fields.hasErrors('dataVigencia')}" th:errors="*{dataVigencia}"></div>
+    </div>
+    <button type="submit">Atualizar</button>
+</form>
+
+<a th:href="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}">Voltar</a>
+</body>
+</html>

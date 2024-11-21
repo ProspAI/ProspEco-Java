@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Login - Prospeco</title>
+</head>
+<body>
+<h1>Login</h1>
+
+<div th:if="${error}">
+  <p th:text="${error}" style="color:red;"></p>
+</div>
+
+<form th:action="@{/login}" method="post">
+  <div>
+    <label for="username">Email:</label>
+    <input type="email" id="username" name="username" required />
+  </div>
+  <div>
+    <label for="password">Senha:</label>
+    <input type="password" id="password" name="password" required />
+  </div>
+  <button type="submit">Entrar</button>
+</form>
+
+<p>Ainda não tem uma conta? <a th:href="@{/register}">Registre-se aqui</a>.</p>
+</body>
+</html>

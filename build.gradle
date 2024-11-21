@@ -59,6 +59,7 @@ dependencies {
     implementation 'org.springframework.integration:spring-integration-kafka'
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.security:spring-security-messaging'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.h2database:h2'

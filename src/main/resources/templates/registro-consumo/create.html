@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Criar Registro de Consumo</title>
+</head>
+<body>
+<h1>Criar Novo Registro de Consumo</h1>
+
+<form th:action="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId})}" th:object="${registro}" method="post">
+    <div>
+        <label for="dataHora">Data e Hora:</label>
+        <input type="datetime-local" id="dataHora" th:field="*{dataHora}" />
+        <div th:if="${#fields.hasErrors('dataHora')}" th:errors="*{dataHora}"></div>
+    </div>
+    <div>
+        <label for="consumo">Consumo (kWh):</label>
+        <input type="number" step="0.01" id="consumo" th:field="*{consumo}" />
+        <div th:if="${#fields.hasErrors('consumo')}" th:errors="*{consumo}"></div>
+    </div>
+    <!-- Campo oculto para aparelhoId -->
+    <input type="hidden" th:field="*{aparelhoId}" th:value="${aparelhoId}" />
+    <button type="submit">Salvar</button>
+</form>
+
+<a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId})}">Voltar</a>
+</body>
+</html>

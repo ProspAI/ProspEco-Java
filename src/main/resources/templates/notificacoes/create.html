@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Criar Notificação</title>
+</head>
+<body>
+<h1>Criar Nova Notificação</h1>
+
+<form th:action="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId})}" th:object="${notificacao}" method="post">
+    <div>
+        <label for="mensagem">Mensagem:</label>
+        <textarea id="mensagem" th:field="*{mensagem}"></textarea>
+        <div th:if="${#fields.hasErrors('mensagem')}" th:errors="*{mensagem}"></div>
+    </div>
+    <!-- Campo oculto para usuarioId -->
+    <input type="hidden" th:field="*{usuarioId}" th:value="${usuarioId}" />
+    <button type="submit">Enviar</button>
+</form>
+
+<a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar</a>
+</body>
+</html>

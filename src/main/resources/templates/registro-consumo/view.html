@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Detalhes do Registro de Consumo</title>
+</head>
+<body>
+<h1>Detalhes do Registro de Consumo</h1>
+
+<div>
+    <p><strong>ID:</strong> <span th:text="${registro.id}"></span></p>
+    <p><strong>Data e Hora:</strong> <span th:text="${#temporals.format(registro.dataHora, 'dd/MM/yyyy HH:mm')}"></span></p>
+    <p><strong>Consumo (kWh):</strong> <span th:text="${registro.consumo}"></span></p>
+    <p><strong>ID do Aparelho:</strong> <span th:text="${registro.aparelhoId}"></span></p>
+</div>
+
+<a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}">Editar</a>
+<a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}">Excluir</a>
+<a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${registro.aparelhoId})}">Voltar</a>
+</body>
+</html>

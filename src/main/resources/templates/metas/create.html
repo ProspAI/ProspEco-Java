@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Criar Meta</title>
+</head>
+<body>
+<h1>Criar Nova Meta</h1>
+
+<form th:action="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId})}" th:object="${meta}" method="post">
+    <div>
+        <label for="consumoAlvo">Consumo Alvo (kWh):</label>
+        <input type="number" step="0.01" id="consumoAlvo" th:field="*{consumoAlvo}" />
+        <div th:if="${#fields.hasErrors('consumoAlvo')}" th:errors="*{consumoAlvo}"></div>
+    </div>
+    <div>
+        <label for="dataInicio">Data de Início:</label>
+        <input type="date" id="dataInicio" th:field="*{dataInicio}" />
+        <div th:if="${#fields.hasErrors('dataInicio')}" th:errors="*{dataInicio}"></div>
+    </div>
+    <div>
+        <label for="dataFim">Data de Fim:</label>
+        <input type="date" id="dataFim" th:field="*{dataFim}" />
+        <div th:if="${#fields.hasErrors('dataFim')}" th:errors="*{dataFim}"></div>
+    </div>
+    <!-- Hidden field for usuarioId -->
+    <input type="hidden" th:field="*{usuarioId}" th:value="${usuarioId}" />
+    <button type="submit">Salvar</button>
+</form>
+
+<a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar</a>
+</body>
+</html>

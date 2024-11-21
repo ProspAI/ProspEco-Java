@@ -1,4 +1,4 @@
-package br.com.fiap.jadv.prospeco.controller;
+package br.com.fiap.jadv.prospeco.controller.Api;
 
 import br.com.fiap.jadv.prospeco.dto.request.RecomendacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.RecomendacaoResponseDTO;
@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/recomendacoes")
+@RequestMapping("/api/recomendacoes")
 @RequiredArgsConstructor
 public class RecomendacaoController {
 

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Registros de Consumo</title>
+</head>
+<body>
+<h1>Registros de Consumo do Aparelho</h1>
+
+<a th:href="@{/registro-consumo/aparelho/{aparelhoId}/novo(aparelhoId=${aparelhoId})}">Novo Registro</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Data/Hora</th>
+        <th>Consumo (kWh)</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="registro : ${registros.content}">
+        <td th:text="${registro.id}"></td>
+        <td th:text="${#temporals.format(registro.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+        <td th:text="${registro.consumo}"></td>
+        <td>
+            <a th:href="@{/registro-consumo/{id}(id=${registro.id})}">Ver</a>
+            <a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}">Editar</a>
+            <a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}">Excluir</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Paginação -->
+<div>
+    <span th:text="'Página ' + (${registros.number} + 1) + ' de ' + ${registros.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${registros.hasPrevious()}">
+                <a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId}, page=${registros.number - 1})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, registros.totalPages)}">
+                <a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId}, page=${i - 1})}"
+                   th:text="${i}"
+                   th:classappend="${registros.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${registros.hasNext()}">
+                <a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId}, page=${registros.number + 1})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-package br.com.fiap.jadv.prospeco.controller;
+package br.com.fiap.jadv.prospeco.controller.Api;
 
 import br.com.fiap.jadv.prospeco.dto.request.BandeiraTarifariaRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.BandeiraTarifariaResponseDTO;

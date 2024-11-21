@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Lista de Metas</title>
+</head>
+<body>
+<h1>Metas do Usuário</h1>
+
+<a th:href="@{/metas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Meta</a>
+
+<table>
+  <thead>
+  <tr>
+    <th>ID</th>
+    <th>Consumo Alvo (kWh)</th>
+    <th>Data Início</th>
+    <th>Data Fim</th>
+    <th>Atingida</th>
+    <th>Ações</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="meta : ${metas.content}">
+    <td th:text="${meta.id}"></td>
+    <td th:text="${meta.consumoAlvo}"></td>
+    <td th:text="${#dates.format(meta.dataInicio, 'dd/MM/yyyy')}"></td>
+    <td th:text="${#dates.format(meta.dataFim, 'dd/MM/yyyy')}"></td>
+    <td th:text="${meta.atingida ? 'Sim' : 'Não'}"></td>
+    <td>
+      <a th:href="@{/metas/{id}(id=${meta.id})}">Ver</a>
+      <a th:href="@{/metas/{id}/editar(id=${meta.id})}">Editar</a>
+      <a th:href="@{/metas/{id}/excluir(id=${meta.id})}">Excluir</a>
+      <a th:if="${!meta.atingida}" th:href="@{/metas/{id}/atingida(id=${meta.id})}">Marcar como Atingida</a>
+    </td>
+  </tr>
+  </tbody>
+</table>
+
+<!-- Pagination -->
+<div>
+  <span th:text="'Página ' + ${metas.number + 1} + ' de ' + ${metas.totalPages}"></span>
+  <div>
+    <ul>
+      <li th:if="${metas.hasPrevious()}">
+        <a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${metas.number - 1})}">Anterior</a>
+      </li>
+      <li th:each="i : ${#numbers.sequence(1, metas.totalPages)}">
+        <a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+           th:text="${i}"
+           th:classappend="${metas.number + 1 == i} ? 'current'"></a>
+      </li>
+      <li th:if="${metas.hasNext()}">
+        <a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${metas.number + 1})}">Próximo</a>
+      </li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

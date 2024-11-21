@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Criar Aparelho</title>
+</head>
+<body>
+<h1>Criar Novo Aparelho</h1>
+
+<form th:action="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId})}" th:object="${aparelho}" method="post">
+    <div>
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" th:field="*{nome}" />
+        <div th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></div>
+    </div>
+    <div>
+        <label for="potencia">Potência:</label>
+        <input type="number" step="0.01" id="potencia" th:field="*{potencia}" />
+        <div th:if="${#fields.hasErrors('potencia')}" th:errors="*{potencia}"></div>
+    </div>
+    <div>
+        <label for="tipo">Tipo:</label>
+        <input type="text" id="tipo" th:field="*{tipo}" />
+        <div th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}"></div>
+    </div>
+    <div>
+        <label for="descricao">Descrição:</label>
+        <textarea id="descricao" th:field="*{descricao}"></textarea>
+        <div th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}"></div>
+    </div>
+    <button type="submit">Salvar</button>
+</form>
+
+<a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar</a>
+</body>
+</html>

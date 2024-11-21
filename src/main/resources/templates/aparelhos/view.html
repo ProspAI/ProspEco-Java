@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Detalhes do Aparelho</title>
+</head>
+<body>
+<h1>Detalhes do Aparelho</h1>
+
+<div>
+    <p><strong>ID:</strong> <span th:text="${aparelho.id}"></span></p>
+    <p><strong>Nome:</strong> <span th:text="${aparelho.nome}"></span></p>
+    <p><strong>Potência:</strong> <span th:text="${aparelho.potencia}"></span></p>
+    <p><strong>Tipo:</strong> <span th:text="${aparelho.tipo}"></span></p>
+    <p><strong>Descrição:</strong> <span th:text="${aparelho.descricao}"></span></p>
+    <p><strong>ID do Usuário:</strong> <span th:text="${aparelho.usuarioId}"></span></p>
+</div>
+
+<a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}">Editar</a>
+<a th:href="@{/aparelhos/{id}/excluir(id=${aparelho.id})}">Excluir</a>
+<a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${aparelho.usuarioId})}">Voltar</a>
+</body>
+</html>

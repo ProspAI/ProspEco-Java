@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Editar Conquista</title>
+</head>
+<body>
+<h1>Editar Conquista</h1>
+
+<form th:action="@{/conquistas/{id}(id=${conquista.id})}" th:object="${conquista}" method="post">
+    <div>
+        <label for="titulo">Título:</label>
+        <input type="text" id="titulo" th:field="*{titulo}" />
+        <div th:if="${#fields.hasErrors('titulo')}" th:errors="*{titulo}"></div>
+    </div>
+    <div>
+        <label for="descricao">Descrição:</label>
+        <textarea id="descricao" th:field="*{descricao}"></textarea>
+        <div th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}"></div>
+    </div>
+    <!-- Hidden field for usuarioId -->
+    <input type="hidden" th:field="*{usuarioId}" th:value="${conquista.usuarioId}" />
+    <button type="submit">Atualizar</button>
+</form>
+
+<a th:href="@{/conquistas/{id}(id=${conquista.id})}">Voltar</a>
+</body>
+</html>

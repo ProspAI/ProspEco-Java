@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Recomendações</title>
+</head>
+<body>
+<h1>Recomendações do Usuário</h1>
+
+<a th:href="@{/recomendacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Recomendação</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Mensagem</th>
+        <th>Data/Hora</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="recomendacao : ${recomendacoes.content}">
+        <td th:text="${recomendacao.id}"></td>
+        <td th:text="${recomendacao.mensagem}"></td>
+        <td th:text="${#dates.format(recomendacao.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Paginação -->
+<div>
+    <span th:text="'Página ' + (${recomendacoes.number} + 1) + ' de ' + ${recomendacoes.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${recomendacoes.hasPrevious()}">
+                <a th:href="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${recomendacoes.number - 1})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, recomendacoes.totalPages)}">
+                <a th:href="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+                   th:text="${i}"
+                   th:classappend="${recomendacoes.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${recomendacoes.hasNext()}">
+                <a th:href="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${recomendacoes.number + 1})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

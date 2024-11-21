@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Notificações</title>
+</head>
+<body>
+<h1>Notificações do Usuário</h1>
+
+<a th:href="@{/notificacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Notificação</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Mensagem</th>
+        <th>Data/Hora</th>
+        <th>Lida</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="notificacao : ${notificacoes.content}">
+        <td th:text="${notificacao.id}"></td>
+        <td th:text="${notificacao.mensagem}"></td>
+        <td th:text="${#dates.format(notificacao.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+        <td th:text="${notificacao.lida ? 'Sim' : 'Não'}"></td>
+        <td>
+            <a th:href="@{/notificacoes/{id}(id=${notificacao.id})}">Ver</a>
+            <a th:if="${!notificacao.lida}" th:href="@{/notificacoes/{id}/lida(id=${notificacao.id})}">Marcar como Lida</a>
+            <a th:href="@{/notificacoes/{id}/excluir(id=${notificacao.id})}">Excluir</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Paginação -->
+<div>
+    <span th:text="'Página ' + ${notificacoes.number + 1} + ' de ' + ${notificacoes.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${notificacoes.hasPrevious()}">
+                <a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${notificacoes.number - 1})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, notificacoes.totalPages)}">
+                <a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+                   th:text="${i}"
+                   th:classappend="${notificacoes.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${notificacoes.hasNext()}">
+                <a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${notificacoes.number + 1})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

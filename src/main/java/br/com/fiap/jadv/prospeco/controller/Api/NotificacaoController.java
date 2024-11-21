@@ -1,4 +1,4 @@
-package br.com.fiap.jadv.prospeco.controller;
+package br.com.fiap.jadv.prospeco.controller.Api;
 
 import br.com.fiap.jadv.prospeco.dto.request.NotificacaoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.NotificacaoResponseDTO;
@@ -10,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/notificacoes")

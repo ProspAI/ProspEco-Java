@@ -1,4 +1,4 @@
-package br.com.fiap.jadv.prospeco.controller;
+package br.com.fiap.jadv.prospeco.controller.Api;
 
 import br.com.fiap.jadv.prospeco.dto.request.AparelhoRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.AparelhoResponseDTO;
@@ -11,8 +11,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/aparelhos")
