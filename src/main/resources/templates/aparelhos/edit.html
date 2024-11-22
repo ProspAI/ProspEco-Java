@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Editar Aparelho</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
 <h1>Editar Aparelho</h1>
 
 <form th:action="@{/aparelhos/{id}(id=${aparelho.id})}" th:object="${aparelho}" method="post">
@@ -31,5 +35,7 @@
 </form>
 
 <a th:href="@{/aparelhos/{id}(id=${aparelho.id})}">Voltar</a>
+<!-- Inclui o fragmento do Footer -->
+<div th:insert="fragments/footer :: footer"></div>
 </body>
 </html>

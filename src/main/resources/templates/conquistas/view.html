@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes da Conquista</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Detalhes da Conquista</h1>
 
 <div>
@@ -17,5 +21,7 @@
 <a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}">Editar</a>
 <a th:href="@{/conquistas/{id}/excluir(id=${conquista.id})}">Excluir</a>
 <a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${conquista.usuarioId})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

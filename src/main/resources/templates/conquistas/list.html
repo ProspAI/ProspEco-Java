@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Conquistas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Conquistas do Usuário</h1>
 
 <a th:href="@{/conquistas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Conquista</a>
@@ -14,7 +18,7 @@
         <th>ID</th>
         <th>Título</th>
         <th>Descrição</th>
-        <th>Data da Conquista</th>
+        <th>Data</th>
         <th>Ações</th>
     </tr>
     </thead>
@@ -23,7 +27,7 @@
         <td th:text="${conquista.id}"></td>
         <td th:text="${conquista.titulo}"></td>
         <td th:text="${conquista.descricao}"></td>
-        <td th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy HH:mm')}"></td>
+        <td th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy')}"></td>
         <td>
             <a th:href="@{/conquistas/{id}(id=${conquista.id})}">Ver</a>
             <a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}">Editar</a>
@@ -52,5 +56,7 @@
         </ul>
     </div>
 </div>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

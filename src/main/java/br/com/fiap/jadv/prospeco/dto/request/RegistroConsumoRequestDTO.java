@@ -15,22 +15,18 @@ import java.time.LocalDateTime;
 @Builder
 public class RegistroConsumoRequestDTO {
 
-    /**
-     * Data e hora em que o registro foi feito.
-     */
     @NotNull(message = "A data e hora são obrigatórias.")
     private LocalDateTime dataHora;
 
-    /**
-     * Valor do consumo em kWh.
-     */
     @NotNull(message = "O valor de consumo é obrigatório.")
     @PositiveOrZero(message = "O valor de consumo deve ser positivo ou zero.")
     private Double consumo;
 
-    /**
-     * Identificador do aparelho ao qual o registro pertence.
-     */
     @NotNull(message = "O ID do aparelho é obrigatório.")
     private Long aparelhoId;
+
+    // Construtor personalizado para inicializar apenas o aparelhoId
+    public RegistroConsumoRequestDTO(Long aparelhoId) {
+        this.aparelhoId = aparelhoId;
+    }
 }

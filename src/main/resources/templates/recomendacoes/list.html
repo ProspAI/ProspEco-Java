@@ -2,8 +2,13 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Recomendações</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Recomendações do Usuário</h1>
 
 <a th:href="@{/recomendacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Recomendação</a>
@@ -20,12 +25,11 @@
     <tr th:each="recomendacao : ${recomendacoes.content}">
         <td th:text="${recomendacao.id}"></td>
         <td th:text="${recomendacao.mensagem}"></td>
-        <td th:text="${#dates.format(recomendacao.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+        <td th:text="${recomendacao.dataHora != null ? #temporals.format(recomendacao.dataHora, 'dd/MM/yyyy HH:mm') : 'N/A'}"></td>
     </tr>
     </tbody>
 </table>
 
-<!-- Paginação -->
 <div>
     <span th:text="'Página ' + (${recomendacoes.number} + 1) + ' de ' + ${recomendacoes.totalPages}"></span>
     <div>
@@ -44,5 +48,7 @@
         </ul>
     </div>
 </div>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

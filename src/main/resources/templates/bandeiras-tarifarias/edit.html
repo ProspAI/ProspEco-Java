@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Editar Bandeira Tarifária</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Editar Bandeira Tarifária</h1>
 
 <form th:action="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}" th:object="${bandeira}" method="post">
@@ -24,5 +28,7 @@
 </form>
 
 <a th:href="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

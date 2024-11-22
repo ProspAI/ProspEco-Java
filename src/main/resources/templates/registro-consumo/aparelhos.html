@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Aparelhos</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div th:insert="fragments/header :: header"></div>
+
+<h1>Selecione um Aparelho para Registrar Consumo</h1>
+
+<!-- Mensagens de Sucesso -->
+<div th:if="${sucesso}" class="alert alert-success">
+    <p th:text="${sucesso}"></p>
+</div>
+<!-- Mensagens de Erro -->
+<div th:if="${erro}" class="alert alert-danger">
+    <p th:text="${erro}"></p>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Descrição</th>
+        <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="aparelho : ${aparelhos.content}">
+        <td th:text="${aparelho.id}"></td>
+        <td th:text="${aparelho.nome}"></td>
+        <td th:text="${aparelho.descricao}"></td>
+        <td>
+            <a th:href="@{/registro-consumo/aparelho/{aparelhoId}/novo(aparelhoId=${aparelho.id})}">
+                Registrar Consumo
+            </a>
+            |
+            <a th:href="@{/aparelho/{id}/editar(id=${aparelho.id})}">Editar</a>
+            |
+            <a th:href="@{/aparelho/{id}/excluir(id=${aparelho.id})}"
+               onclick="return confirm('Tem certeza que deseja excluir este aparelho?');">
+                Excluir
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Paginação -->
+<div>
+    <span th:text="'Página ' + (${aparelhos.number} + 1) + ' de ' + ${aparelhos.totalPages}"></span>
+    <div>
+        <ul>
+            <li th:if="${aparelhos.hasPrevious()}">
+                <a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number - 1}, size=${aparelhos.size})}">Anterior</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(1, aparelhos.totalPages)}">
+                <a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1}, size=${aparelhos.size})}"
+                   th:text="${i}"
+                   th:classappend="${aparelhos.number + 1 == i} ? 'current'"></a>
+            </li>
+            <li th:if="${aparelhos.hasNext()}">
+                <a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number + 1}, size=${aparelhos.size})}">Próximo</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<a th:href="@{/}">Voltar ao Dashboard</a>
+<div th:insert="fragments/footer :: footer"></div>
+
+</body>
+</html>

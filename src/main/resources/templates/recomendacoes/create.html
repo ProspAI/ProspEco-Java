@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Criar Recomendação</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Criar Nova Recomendação</h1>
 
 <form th:action="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId})}" th:object="${recomendacao}" method="post">
@@ -12,11 +16,12 @@
         <input type="text" id="aparelho" th:field="*{aparelho}" />
         <div th:if="${#fields.hasErrors('aparelho')}" th:errors="*{aparelho}"></div>
     </div>
-    <!-- Campo oculto para usuarioId -->
     <input type="hidden" th:field="*{usuarioId}" th:value="${usuarioId}" />
     <button type="submit">Gerar Recomendação</button>
 </form>
-
 <a th:href="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar</a>
+
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

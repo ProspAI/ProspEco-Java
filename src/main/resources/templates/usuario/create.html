@@ -2,8 +2,13 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Criar Usuário</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Criar Novo Usuário</h1>
 <form th:action="@{/usuarios}" th:object="${usuario}" method="post">
     <div>

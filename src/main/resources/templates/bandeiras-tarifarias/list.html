@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Bandeiras Tarifárias</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Bandeiras Tarifárias</h1>
 
 <a th:href="@{/bandeiras-tarifarias/nova}">Nova Bandeira Tarifária</a>
@@ -21,7 +25,7 @@
     <tr th:each="bandeira : ${bandeiras}">
         <td th:text="${bandeira.id}"></td>
         <td th:text="${bandeira.tipoBandeira}"></td>
-        <td th:text="${#dates.format(bandeira.dataVigencia, 'dd/MM/yyyy')}"></td>
+        <td th:text="${bandeira.dataVigencia.format(@dateFormatter)}"></td>
         <td>
             <a th:href="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}">Ver</a>
             <a th:href="@{/bandeiras-tarifarias/{id}/editar(id=${bandeira.id})}">Editar</a>
@@ -30,5 +34,7 @@
     </tr>
     </tbody>
 </table>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

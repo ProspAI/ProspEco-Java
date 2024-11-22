@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes da Notificação</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Detalhes da Notificação</h1>
 
 <div>
@@ -13,9 +17,10 @@
     <p><strong>Lida:</strong> <span th:text="${notificacao.lida ? 'Sim' : 'Não'}"></span></p>
     <p><strong>ID do Usuário:</strong> <span th:text="${notificacao.usuarioId}"></span></p>
 </div>
-
 <a th:if="${!notificacao.lida}" th:href="@{/notificacoes/{id}/lida(id=${notificacao.id})}">Marcar como Lida</a>
 <a th:href="@{/notificacoes/{id}/excluir(id=${notificacao.id})}">Excluir</a>
 <a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${notificacao.usuarioId})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

@@ -2,9 +2,21 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Registros de Consumo</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Registros de Consumo do Aparelho</h1>
+
+<!-- Mensagens de Sucesso -->
+<div th:if="${sucesso}" class="alert alert-success">
+    <p th:text="${sucesso}"></p>
+</div>
+<!-- Mensagens de Erro -->
+<div th:if="${erro}" class="alert alert-danger">
+    <p th:text="${erro}"></p>
+</div>
 
 <a th:href="@{/registro-consumo/aparelho/{aparelhoId}/novo(aparelhoId=${aparelhoId})}">Novo Registro</a>
 
@@ -24,8 +36,13 @@
         <td th:text="${registro.consumo}"></td>
         <td>
             <a th:href="@{/registro-consumo/{id}(id=${registro.id})}">Ver</a>
+            |
             <a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}">Editar</a>
-            <a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}">Excluir</a>
+            |
+            <a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}"
+               onclick="return confirm('Tem certeza que deseja excluir este registro?');">
+                Excluir
+            </a>
         </td>
     </tr>
     </tbody>
@@ -50,5 +67,9 @@
         </ul>
     </div>
 </div>
+
+<a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar para Aparelhos</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

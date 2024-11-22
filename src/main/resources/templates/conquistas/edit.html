@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Editar Conquista</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Editar Conquista</h1>
 
 <form th:action="@{/conquistas/{id}(id=${conquista.id})}" th:object="${conquista}" method="post">
@@ -17,11 +21,12 @@
         <textarea id="descricao" th:field="*{descricao}"></textarea>
         <div th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}"></div>
     </div>
-    <!-- Hidden field for usuarioId -->
     <input type="hidden" th:field="*{usuarioId}" th:value="${conquista.usuarioId}" />
     <button type="submit">Atualizar</button>
 </form>
 
 <a th:href="@{/conquistas/{id}(id=${conquista.id})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle}">Prospeco</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body>
+<!-- Incluir o header -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- Conteúdo específico da página -->
+<div class="content">
+    <th:block th:replace="${body}"></th:block>
+</div>
+
+<!-- Incluir o footer -->
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

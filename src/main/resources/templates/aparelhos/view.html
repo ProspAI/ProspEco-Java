@@ -1,22 +1,33 @@
+<!-- src/main/resources/templates/aparelhos/details.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes do Aparelho</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-<h1>Detalhes do Aparelho</h1>
 
-<div>
-    <p><strong>ID:</strong> <span th:text="${aparelho.id}"></span></p>
-    <p><strong>Nome:</strong> <span th:text="${aparelho.nome}"></span></p>
-    <p><strong>Potência:</strong> <span th:text="${aparelho.potencia}"></span></p>
-    <p><strong>Tipo:</strong> <span th:text="${aparelho.tipo}"></span></p>
-    <p><strong>Descrição:</strong> <span th:text="${aparelho.descricao}"></span></p>
-    <p><strong>ID do Usuário:</strong> <span th:text="${aparelho.usuarioId}"></span></p>
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
+<div th:fragment="body">
+    <h1>Detalhes do Aparelho</h1>
+
+    <div>
+        <p><strong>ID:</strong> <span th:text="${aparelho.id}"></span></p>
+        <p><strong>Nome:</strong> <span th:text="${aparelho.nome}"></span></p>
+        <p><strong>Potência:</strong> <span th:text="${aparelho.potencia}"></span></p>
+        <p><strong>Tipo:</strong> <span th:text="${aparelho.tipo}"></span></p>
+        <p><strong>Descrição:</strong> <span th:text="${aparelho.descricao}"></span></p>
+    </div>
+
+    <a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}" class="button">Editar</a>
+    <a th:href="@{/aparelhos/{id}/excluir(id=${aparelho.id})}" class="button"
+       onclick="return confirm('Tem certeza que deseja excluir este aparelho?');">
+        Excluir
+    </a>
+    <a th:href="@{/aparelhos}" class="button">Voltar</a>
 </div>
+<div th:insert="fragments/footer :: footer"></div>
 
-<a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}">Editar</a>
-<a th:href="@{/aparelhos/{id}/excluir(id=${aparelho.id})}">Excluir</a>
-<a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${aparelho.usuarioId})}">Voltar</a>
 </body>
 </html>

@@ -1,34 +1,50 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Usuários</title>
+    <meta charset="UTF-8">
+    <title>Lista de Usuários - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-<h1>Lista de Usuários</h1>
-<a th:href="@{/usuarios/novo}">Novo Usuário</a>
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Nome</th>
-        <th>Email</th>
-        <th>Pontuação Economia</th>
-        <th>Ações</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="usuario : ${usuarios}">
-        <td th:text="${usuario.id}"></td>
-        <td th:text="${usuario.nome}"></td>
-        <td th:text="${usuario.email}"></td>
-        <td th:text="${usuario.pontuacaoEconomia}"></td>
-        <td>
-            <a th:href="@{/usuarios/{id}(id=${usuario.id})}">Ver</a>
-            <a th:href="@{/usuarios/{id}/editar(id=${usuario.id})}">Editar</a>
-            <a th:href="@{/usuarios/{id}/excluir(id=${usuario.id})}">Excluir</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
+
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Lista de Usuários</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Pontuação Economia</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="usuario : ${usuarios}">
+            <td th:text="${usuario.id}"></td>
+            <td th:text="${usuario.nome}"></td>
+            <td th:text="${usuario.email}"></td>
+            <td th:text="${usuario.pontuacaoEconomia}"></td>
+            <td>
+                <a th:href="@{/usuarios/{id}(id=${usuario.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:href="@{/usuarios/{id}/editar(id=${usuario.id})}" class="btn btn-outline-secondary">Editar</a>
+                <a th:href="@{/usuarios/{id}/excluir(id=${usuario.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza de que deseja excluir este usuário?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <a th:href="@{/usuarios/novo}" class="btn btn-primary">Novo Usuário</a>
+</div>
+
+<!-- Inclui o fragmento do Footer -->
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

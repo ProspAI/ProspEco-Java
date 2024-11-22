@@ -12,10 +12,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -23,69 +23,85 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final FirebaseTokenFilter firebaseTokenFilter;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final FirebaseTokenFilter firebaseTokenFilter; // Filtro para autenticação Firebase
+    private final JwtAuthenticationFilter jwtAuthenticationFilter; // Filtro para autenticação JWT
     private final CustomUserDetailsService customUserDetailsService;
 
+    /**
+     * Configuração de segurança para APIs.
+     * Usa autenticação stateless com suporte para Firebase e JWT.
+     */
     @Bean
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/**", "/auth/**")
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // CSRF não é necessário para APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll() // Registro de novos usuários
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll() // Login
+                        .anyRequest().authenticated() // Todas as outras rotas precisam de autenticação
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
-                .userDetailsService(customUserDetailsService);
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sessões stateless para APIs
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Filtro JWT
+                .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class) // Filtro Firebase
+                .userDetailsService(customUserDetailsService); // Custom UserDetailsService
 
         return http.build();
     }
 
+    /**
+     * Configuração de segurança para páginas web.
+     * Usa autenticação baseada em sessão com suporte para login de formulário.
+     */
     @Bean
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/**")
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // CSRF pode ser habilitado para maior segurança
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll() // Acesso público
+                        .anyRequest().authenticated() // Todas as outras rotas precisam de autenticação
                 )
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/usuarios", true)
-                        .permitAll()
+                        .loginPage("/login") // Página de login personalizada
+                        .loginProcessingUrl("/login") // URL para processamento do login
+                        .defaultSuccessUrl("/usuarios", true) // Redirecionamento após sucesso no login
+                        .permitAll() // Permitir acesso ao login para todos
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
+                        .logoutUrl("/logout") // URL para logout
+                        .logoutSuccessUrl("/login?logout") // Redirecionamento após logout
+                        .permitAll() // Permitir acesso ao logout para todos
                 )
-                .authenticationProvider(authenticationProvider())
-                .userDetailsService(customUserDetailsService);
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)) // Sessões persistentes
+                .authenticationProvider(authenticationProvider()) // Autenticação personalizada
+                .userDetailsService(customUserDetailsService); // Custom UserDetailsService
 
         return http.build();
     }
 
+    /**
+     * Provedor de autenticação para autenticação baseada em sessão.
+     */
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(customUserDetailsService); // Custom UserDetailsService
+        authProvider.setPasswordEncoder(passwordEncoder()); // Codificador de senhas
+        return authProvider;
+    }
+
+    /**
+     * Bean de codificador de senhas usando BCrypt.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Adicione o AuthenticationProvider
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(customUserDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    // O AuthenticationManager é necessário para o login via API
+    /**
+     * Gerenciador de autenticação necessário para autenticação programática e APIs.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();

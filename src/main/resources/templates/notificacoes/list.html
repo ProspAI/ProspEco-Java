@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Notificações</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Notificações do Usuário</h1>
 
 <a th:href="@{/notificacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Notificação</a>
@@ -52,5 +56,7 @@
         </ul>
     </div>
 </div>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

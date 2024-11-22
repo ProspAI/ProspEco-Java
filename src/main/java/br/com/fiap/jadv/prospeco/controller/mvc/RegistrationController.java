@@ -1,4 +1,4 @@
-package br.com.fiap.jadv.prospeco.controller.Mvc;
+package br.com.fiap.jadv.prospeco.controller.mvc;
 
 import br.com.fiap.jadv.prospeco.dto.request.UsuarioRequestDTO;
 import br.com.fiap.jadv.prospeco.dto.response.UsuarioResponseDTO;

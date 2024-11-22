@@ -2,9 +2,20 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes do Registro de Consumo</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Detalhes do Registro de Consumo</h1>
+
+<!-- Mensagens de Feedback -->
+<div th:if="${sucesso}" class="alert alert-success">
+    <p th:text="${sucesso}"></p>
+</div>
+<div th:if="${erro}" class="alert alert-danger">
+    <p th:text="${erro}"></p>
+</div>
 
 <div>
     <p><strong>ID:</strong> <span th:text="${registro.id}"></span></p>
@@ -14,7 +25,14 @@
 </div>
 
 <a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}">Editar</a>
-<a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}">Excluir</a>
-<a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${registro.aparelhoId})}">Voltar</a>
+|
+<a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}"
+   onclick="return confirm('Tem certeza que deseja excluir este registro?');">
+    Excluir
+</a>
+|
+<a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${registro.aparelhoId})}">Voltar para Registros</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

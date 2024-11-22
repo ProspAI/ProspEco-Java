@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Editar Meta</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Editar Meta</h1>
 
 <form th:action="@{/metas/{id}(id=${meta.id})}" th:object="${meta}" method="post">
@@ -22,11 +26,12 @@
         <input type="date" id="dataFim" th:field="*{dataFim}" />
         <div th:if="${#fields.hasErrors('dataFim')}" th:errors="*{dataFim}"></div>
     </div>
-    <!-- Hidden field for usuarioId -->
     <input type="hidden" th:field="*{usuarioId}" th:value="${meta.usuarioId}" />
     <button type="submit">Atualizar</button>
 </form>
 
 <a th:href="@{/metas/{id}(id=${meta.id})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

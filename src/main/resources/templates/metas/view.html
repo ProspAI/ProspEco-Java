@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes da Meta</title>
+    <link rel="stylesheet" href="/css/styles.css">
+
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Detalhes da Meta</h1>
 
 <div>
@@ -19,5 +23,7 @@
 <a th:href="@{/metas/{id}/excluir(id=${meta.id})}">Excluir</a>
 <a th:if="${!meta.atingida}" th:href="@{/metas/{id}/atingida(id=${meta.id})}">Marcar como Atingida</a>
 <a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${meta.usuarioId})}">Voltar</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>

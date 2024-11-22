@@ -1,10 +1,12 @@
-package br.com.fiap.jadv.prospeco.controller.Mvc;
+package br.com.fiap.jadv.prospeco.controller.mvc;
 
 import br.com.fiap.jadv.prospeco.dto.request.RegistroConsumoRequestDTO;
+import br.com.fiap.jadv.prospeco.dto.response.AparelhoResponseDTO;
 import br.com.fiap.jadv.prospeco.dto.response.RegistroConsumoResponseDTO;
 import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
-import br.com.fiap.jadv.prospeco.service.RegistroConsumoService;
 import br.com.fiap.jadv.prospeco.service.AparelhoService;
+import br.com.fiap.jadv.prospeco.service.RegistroConsumoService;
+import br.com.fiap.jadv.prospeco.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/registro-consumo")
@@ -20,77 +27,68 @@ public class RegistroConsumoMvcController {
 
     private final RegistroConsumoService registroConsumoService;
     private final AparelhoService aparelhoService;
+    private final UsuarioService usuarioService; // Para obter o ID do usuário
 
     @Autowired
-    public RegistroConsumoMvcController(RegistroConsumoService registroConsumoService, AparelhoService aparelhoService) {
+    public RegistroConsumoMvcController(RegistroConsumoService registroConsumoService,
+                                        AparelhoService aparelhoService,
+                                        UsuarioService usuarioService) {
         this.registroConsumoService = registroConsumoService;
         this.aparelhoService = aparelhoService;
+        this.usuarioService = usuarioService;
     }
 
-    /**
-     * Lista todos os registros de consumo de um aparelho.
-     *
-     * @param aparelhoId ID do aparelho.
-     * @param pageable   Informações de paginação.
-     * @param model      Modelo para a view.
-     * @return Nome da página Thymeleaf.
-     */
+    // Redirecionamento para listar aparelhos do usuário logado
+    @GetMapping
+    public String listarAparelhosDoUsuario(Pageable pageable, Model model) {
+        // Obtém o usuário autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName(); // Obtém o e-mail do usuário autenticado
+
+        // Busca o ID do usuário logado
+        Long usuarioId = usuarioService.buscarUsuarioPorEmail(email).getId();
+
+        // Lista os aparelhos do usuário
+        Page<AparelhoResponseDTO> aparelhos = aparelhoService.listarAparelhosPorUsuario(usuarioId, pageable);
+        model.addAttribute("aparelhos", aparelhos);
+        model.addAttribute("usuarioId", usuarioId);
+
+        return "registro-consumo/aparelhos";
+    }
+
+    // Listar registros de consumo de um aparelho específico
     @GetMapping("/aparelho/{aparelhoId}")
-    public String listarRegistrosPorAparelho(@PathVariable Long aparelhoId,
-                                             Pageable pageable,
-                                             Model model) {
+    public String listarRegistrosPorAparelho(@PathVariable Long aparelhoId, Pageable pageable, Model model) {
         Page<RegistroConsumoResponseDTO> registros = registroConsumoService.listarRegistrosPorAparelho(aparelhoId, pageable);
         model.addAttribute("registros", registros);
         model.addAttribute("aparelhoId", aparelhoId);
         return "registro-consumo/list";
     }
 
-    /**
-     * Exibe o formulário para criação de um novo registro de consumo.
-     *
-     * @param aparelhoId ID do aparelho.
-     * @param model      Modelo para a view.
-     * @return Nome da página Thymeleaf.
-     */
+    // Mostrar formulário para criar um novo registro de consumo
     @GetMapping("/aparelho/{aparelhoId}/novo")
     public String mostrarFormCriarRegistro(@PathVariable Long aparelhoId, Model model) {
-        RegistroConsumoRequestDTO registro = new RegistroConsumoRequestDTO();
-        registro.setAparelhoId(aparelhoId);
-        model.addAttribute("registro", registro);
+        model.addAttribute("registro", new RegistroConsumoRequestDTO(aparelhoId));
         model.addAttribute("aparelhoId", aparelhoId);
         return "registro-consumo/create";
     }
 
-    /**
-     * Processa o formulário de criação de um novo registro de consumo.
-     *
-     * @param aparelhoId  ID do aparelho.
-     * @param requestDTO  Dados do registro a ser criado.
-     * @param result      Resultado da validação.
-     * @param model       Modelo para a view.
-     * @return Redirecionamento ou página do formulário se houver erros.
-     */
+    // Criar um novo registro de consumo
     @PostMapping("/aparelho/{aparelhoId}")
     public String criarRegistroConsumo(@PathVariable Long aparelhoId,
                                        @Valid @ModelAttribute("registro") RegistroConsumoRequestDTO requestDTO,
-                                       BindingResult result,
-                                       Model model) {
+                                       BindingResult result, Model model,
+                                       RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("aparelhoId", aparelhoId);
             return "registro-consumo/create";
         }
-        requestDTO.setAparelhoId(aparelhoId);
         registroConsumoService.criarRegistroConsumo(requestDTO);
+        redirectAttributes.addFlashAttribute("sucesso", "Registro de consumo criado com sucesso!");
         return "redirect:/registro-consumo/aparelho/" + aparelhoId;
     }
 
-    /**
-     * Exibe os detalhes de um registro de consumo.
-     *
-     * @param id    ID do registro.
-     * @param model Modelo para a view.
-     * @return Nome da página Thymeleaf.
-     */
+    // Visualizar detalhes de um registro de consumo
     @GetMapping("/{id}")
     public String visualizarRegistro(@PathVariable Long id, Model model) {
         RegistroConsumoResponseDTO registro = registroConsumoService.buscarRegistroPorId(id)
@@ -99,60 +97,38 @@ public class RegistroConsumoMvcController {
         return "registro-consumo/view";
     }
 
-    /**
-     * Exibe o formulário para editar um registro de consumo.
-     *
-     * @param id    ID do registro.
-     * @param model Modelo para a view.
-     * @return Nome da página Thymeleaf.
-     */
+    // Mostrar formulário para editar um registro de consumo
     @GetMapping("/{id}/editar")
     public String mostrarFormEditarRegistro(@PathVariable Long id, Model model) {
         RegistroConsumoResponseDTO registro = registroConsumoService.buscarRegistroPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de consumo não encontrado"));
-        RegistroConsumoRequestDTO requestDTO = new RegistroConsumoRequestDTO();
-        requestDTO.setDataHora(registro.getDataHora());
-        requestDTO.setConsumo(registro.getConsumo());
-        requestDTO.setAparelhoId(registro.getAparelhoId());
-        model.addAttribute("registro", requestDTO);
-        model.addAttribute("registroId", id);
+        model.addAttribute("registro", registro);
         return "registro-consumo/edit";
     }
 
-    /**
-     * Processa o formulário para atualizar um registro de consumo.
-     *
-     * @param id         ID do registro.
-     * @param requestDTO Dados atualizados do registro.
-     * @param result     Resultado da validação.
-     * @param model      Modelo para a view.
-     * @return Redirecionamento ou página do formulário se houver erros.
-     */
+    // Atualizar um registro de consumo
     @PostMapping("/{id}")
     public String atualizarRegistroConsumo(@PathVariable Long id,
                                            @Valid @ModelAttribute("registro") RegistroConsumoRequestDTO requestDTO,
-                                           BindingResult result,
-                                           Model model) {
+                                           BindingResult result, Model model,
+                                           RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("registroId", id);
             return "registro-consumo/edit";
         }
-        registroConsumoService.atualizarRegistroConsumo(id, requestDTO);
+        RegistroConsumoResponseDTO registroAtualizado = registroConsumoService.atualizarRegistroConsumo(id, requestDTO);
+        redirectAttributes.addFlashAttribute("sucesso", "Registro de consumo atualizado com sucesso!");
         return "redirect:/registro-consumo/" + id;
     }
 
-    /**
-     * Exclui um registro de consumo.
-     *
-     * @param id ID do registro.
-     * @return Redirecionamento para a lista de registros do aparelho.
-     */
+    // Excluir um registro de consumo
     @GetMapping("/{id}/excluir")
-    public String excluirRegistroConsumo(@PathVariable Long id) {
-        RegistroConsumoResponseDTO registro = registroConsumoService.buscarRegistroPorId(id)
+    public String excluirRegistroConsumo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        Long aparelhoId = registroConsumoService.buscarRegistroPorId(id)
+                .map(RegistroConsumoResponseDTO::getAparelhoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de consumo não encontrado"));
-        Long aparelhoId = registro.getAparelhoId();
         registroConsumoService.excluirRegistroConsumo(id);
+        redirectAttributes.addFlashAttribute("sucesso", "Registro de consumo excluído com sucesso!");
         return "redirect:/registro-consumo/aparelho/" + aparelhoId;
     }
 }

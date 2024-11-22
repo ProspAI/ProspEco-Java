@@ -2,8 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Detalhes do Usuário</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
 <h1>Detalhes do Usuário</h1>
 <p><strong>ID:</strong> <span th:text="${usuario.id}"></span></p>
 <p><strong>Nome:</strong> <span th:text="${usuario.nome}"></span></p>
@@ -12,5 +16,7 @@
 <a th:href="@{/usuarios/{id}/editar(id=${usuario.id})}">Editar</a>
 <a th:href="@{/usuarios/{id}/excluir(id=${usuario.id})}">Excluir</a>
 <a th:href="@{/usuarios}">Voltar à Lista</a>
+<!-- Inclui o fragmento do Footer -->
+<div th:insert="fragments/footer :: footer"></div>
 </body>
 </html>

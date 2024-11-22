@@ -13,9 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class RegistroConsumoService {
@@ -37,7 +35,8 @@ public class RegistroConsumoService {
      * Lista todos os registros de consumo de um aparelho.
      *
      * @param aparelhoId ID do aparelho.
-     * @return Lista de RegistroConsumoResponseDTO.
+     * @param pageable   Objeto Pageable para paginação.
+     * @return Página contendo os registros de consumo.
      */
     public Page<RegistroConsumoResponseDTO> listarRegistrosPorAparelho(Long aparelhoId, Pageable pageable) {
         Aparelho aparelho = aparelhoRepository.findById(aparelhoId)
@@ -75,12 +74,7 @@ public class RegistroConsumoService {
         RegistroConsumo novoRegistro = registroConsumoRepository.save(registroConsumo);
 
         // Enviar evento ao Kafka
-        try {
-            RegistroConsumoResponseDTO responseDTO = toResponseDTO(novoRegistro);
-            kafkaProducerService.sendMessage("registro-consumo-events", responseDTO);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        enviarEventoConsumo(novoRegistro, "registro-consumo-events");
 
         return toResponseDTO(novoRegistro);
     }
@@ -101,12 +95,7 @@ public class RegistroConsumoService {
         RegistroConsumo registroAtualizado = registroConsumoRepository.save(registro);
 
         // Enviar evento ao Kafka
-        try {
-            RegistroConsumoResponseDTO responseDTO = toResponseDTO(registroAtualizado);
-            kafkaProducerService.sendMessage("registro-consumo-events", responseDTO);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        enviarEventoConsumo(registroAtualizado, "registro-consumo-events");
 
         return toResponseDTO(registroAtualizado);
     }
@@ -123,12 +112,7 @@ public class RegistroConsumoService {
         registroConsumoRepository.delete(registro);
 
         // Enviar evento ao Kafka
-        try {
-            RegistroConsumoResponseDTO responseDTO = toResponseDTO(registro);
-            kafkaProducerService.sendMessage("registro-consumo-events", responseDTO);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        enviarEventoConsumo(registro, "registro-consumo-events");
     }
 
     /**
@@ -142,5 +126,21 @@ public class RegistroConsumoService {
         BeanUtils.copyProperties(registro, responseDTO);
         responseDTO.setAparelhoId(registro.getAparelho().getId());
         return responseDTO;
+    }
+
+    /**
+     * Envia um evento ao Kafka.
+     *
+     * @param registroConsumo Entidade RegistroConsumo.
+     * @param topic           Tópico do Kafka.
+     */
+    private void enviarEventoConsumo(RegistroConsumo registroConsumo, String topic) {
+        try {
+            RegistroConsumoResponseDTO responseDTO = toResponseDTO(registroConsumo);
+            kafkaProducerService.sendMessage(topic, responseDTO);
+        } catch (Exception e) {
+            // Utilize um logger apropriado no lugar de e.printStackTrace()
+            e.printStackTrace();
+        }
     }
 }

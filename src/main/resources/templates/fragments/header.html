@@ -1,0 +1,20 @@
+<div th:fragment="header">
+    <header class="header">
+        <nav class="navbar">
+            <ul class="nav-links">
+                <li><a th:href="@{/aparelhos}">Aparelhos</a></li>
+                <li><a th:href="@{/bandeiras-tarifarias}">Bandeiras Tarifárias</a></li>
+                <li><a th:href="@{/registro-consumo}">Registros de Consumo</a></li>
+                <li><a th:href="@{/metas}">Metas</a></li>
+                <li><a th:href="@{/notificacoes}">Notificações</a></li>
+                <li><a th:href="@{/recomendacoes}">Recomendações</a></li>
+                <li><a th:href="@{/conquistas}">Conquistas</a></li>
+                <li><a th:href="@{/usuarios}">Usuários</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <a th:if="${#authentication != null && #authentication.isAuthenticated()}"
+               th:href="@{/logout}" class="logout-button">Logout</a>
+        </div>
+    </header>
+</div>

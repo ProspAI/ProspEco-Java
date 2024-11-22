@@ -2,26 +2,39 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Criar Registro de Consumo</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+<div th:insert="fragments/header :: header"></div>
+
 <h1>Criar Novo Registro de Consumo</h1>
 
-<form th:action="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId})}" th:object="${registro}" method="post">
+<!-- Mensagens de Sucesso -->
+<div th:if="${sucesso}" class="alert alert-success">
+    <p th:text="${sucesso}"></p>
+</div>
+<!-- Mensagens de Erro -->
+<div th:if="${erro}" class="alert alert-danger">
+    <p th:text="${erro}"></p>
+</div>
+
+<form th:action="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId})}"
+      th:object="${registro}" method="post">
     <div>
         <label for="dataHora">Data e Hora:</label>
         <input type="datetime-local" id="dataHora" th:field="*{dataHora}" />
-        <div th:if="${#fields.hasErrors('dataHora')}" th:errors="*{dataHora}"></div>
+        <div th:if="${#fields.hasErrors('dataHora')}" th:errors="*{dataHora}" class="error"></div>
     </div>
     <div>
         <label for="consumo">Consumo (kWh):</label>
         <input type="number" step="0.01" id="consumo" th:field="*{consumo}" />
-        <div th:if="${#fields.hasErrors('consumo')}" th:errors="*{consumo}"></div>
+        <div th:if="${#fields.hasErrors('consumo')}" th:errors="*{consumo}" class="error"></div>
     </div>
-    <!-- Campo oculto para aparelhoId -->
-    <input type="hidden" th:field="*{aparelhoId}" th:value="${aparelhoId}" />
     <button type="submit">Salvar</button>
 </form>
 
-<a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId})}">Voltar</a>
+<a th:href="@{/registro-consumo}">Voltar para Aparelhos</a>
+<div th:insert="fragments/footer :: footer"></div>
+
 </body>
 </html>
