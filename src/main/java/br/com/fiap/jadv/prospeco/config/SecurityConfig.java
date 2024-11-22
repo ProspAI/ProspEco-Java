@@ -37,9 +37,7 @@ public class SecurityConfig {
                 .securityMatcher("/api/**", "/auth/**")
                 .csrf(csrf -> csrf.disable()) // CSRF não é necessário para APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll() // Registro de novos usuários
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll() // Login
-                        .anyRequest().authenticated() // Todas as outras rotas precisam de autenticação
+                        .anyRequest().permitAll() // Permitir acesso a todos os endpoints da API
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sessões stateless para APIs
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Filtro JWT
