@@ -204,9 +204,11 @@ A arquitetura do **ProspEco API** segue um modelo multicamadas, promovendo organ
    ```
 
 4. **Acesse:**  
-   - **Local:** `http://localhost:8080`  
+   - **MVC Local:** `http://localhost:8080/usuarios`  
    - **Swagger Local:** `http://localhost:8080/swagger-ui.html`  
-   - **Nuvem:** [Swagger UI](https://prospecoapi.azurewebsites.net/swagger-ui/index.html)  
+   - **Swagger Nuvem:** [Swagger UI](https://prospecoapi.azurewebsites.net/swagger-ui/index.html)
+   - **Swagger Nuvem:** [Swagger UI](https://prospecoapi.azurewebsites.net/usuarios)  
+
 
 ---
 
