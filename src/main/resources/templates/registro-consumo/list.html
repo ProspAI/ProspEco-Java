@@ -1,57 +1,59 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Registros de Consumo</title>
+    <meta charset="UTF-8">
+    <title>Lista de Registros de Consumo - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
 <div th:insert="fragments/header :: header"></div>
 
-<h1>Registros de Consumo do Aparelho</h1>
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Registros de Consumo do Aparelho</h1>
 
-<!-- Mensagens de Sucesso -->
-<div th:if="${sucesso}" class="alert alert-success">
-    <p th:text="${sucesso}"></p>
-</div>
-<!-- Mensagens de Erro -->
-<div th:if="${erro}" class="alert alert-danger">
-    <p th:text="${erro}"></p>
-</div>
+    <!-- Mensagens de Sucesso -->
+    <div th:if="${sucesso}" class="alert alert-success">
+        <p th:text="${sucesso}"></p>
+    </div>
+    <!-- Mensagens de Erro -->
+    <div th:if="${erro}" class="alert alert-danger">
+        <p th:text="${erro}"></p>
+    </div>
 
-<a th:href="@{/registro-consumo/aparelho/{aparelhoId}/novo(aparelhoId=${aparelhoId})}">Novo Registro</a>
+    <a th:href="@{/registro-consumo/aparelho/{aparelhoId}/novo(aparelhoId=${aparelhoId})}" class="btn btn-primary">Novo Registro</a>
 
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Data/Hora</th>
-        <th>Consumo (kWh)</th>
-        <th>Ações</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="registro : ${registros.content}">
-        <td th:text="${registro.id}"></td>
-        <td th:text="${#temporals.format(registro.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
-        <td th:text="${registro.consumo}"></td>
-        <td>
-            <a th:href="@{/registro-consumo/{id}(id=${registro.id})}">Ver</a>
-            |
-            <a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}">Editar</a>
-            |
-            <a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}"
-               onclick="return confirm('Tem certeza que deseja excluir este registro?');">
-                Excluir
-            </a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Data/Hora</th>
+            <th>Consumo (kWh)</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="registro : ${registros.content}">
+            <td th:text="${registro.id}"></td>
+            <td th:text="${#dates.format(registro.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${registro.consumo}"></td>
+            <td>
+                <a th:href="@{/registro-consumo/{id}(id=${registro.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:href="@{/registro-consumo/{id}/editar(id=${registro.id})}" class="btn btn-outline-secondary">Editar</a>
+                <a th:href="@{/registro-consumo/{id}/excluir(id=${registro.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir este registro?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-<!-- Paginação -->
-<div>
-    <span th:text="'Página ' + (${registros.number} + 1) + ' de ' + ${registros.totalPages}"></span>
-    <div>
+    <!-- Paginação -->
+    <div class="pagination">
+        <span th:text="'Página ' + (${registros.number} + 1) + ' de ' + ${registros.totalPages}"></span>
         <ul>
             <li th:if="${registros.hasPrevious()}">
                 <a th:href="@{/registro-consumo/aparelho/{aparelhoId}(aparelhoId=${aparelhoId}, page=${registros.number - 1})}">Anterior</a>
@@ -66,9 +68,11 @@
             </li>
         </ul>
     </div>
+
+    <a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId})}" class="btn btn-secondary">Voltar para Aparelhos</a>
 </div>
 
-<a th:href="@{/registro-consumo/usuario/{usuarioId}(usuarioId=${usuarioId})}">Voltar para Aparelhos</a>
+<!-- Inclui o fragmento do Footer -->
 <div th:insert="fragments/footer :: footer"></div>
 
 </body>

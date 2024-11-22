@@ -13,8 +13,8 @@
 <div>
     <p><strong>ID:</strong> <span th:text="${meta.id}"></span></p>
     <p><strong>Consumo Alvo (kWh):</strong> <span th:text="${meta.consumoAlvo}"></span></p>
-    <p><strong>Data de Início:</strong> <span th:text="${#dates.format(meta.dataInicio, 'dd/MM/yyyy')}"></span></p>
-    <p><strong>Data de Fim:</strong> <span th:text="${#dates.format(meta.dataFim, 'dd/MM/yyyy')}"></span></p>
+    <p><strong>Data de Início:</strong> <span th:text="${#temporals.format(meta.dataInicio, 'dd/MM/yyyy')}"></span></p>
+    <p><strong>Data de Fim:</strong> <span th:text="${#temporals.format(meta.dataFim, 'dd/MM/yyyy')}"></span></p>
     <p><strong>Atingida:</strong> <span th:text="${meta.atingida ? 'Sim' : 'Não'}"></span></p>
     <p><strong>ID do Usuário:</strong> <span th:text="${meta.usuarioId}"></span></p>
 </div>

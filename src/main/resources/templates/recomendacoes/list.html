@@ -1,38 +1,59 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Recomendações</title>
+    <meta charset="UTF-8">
+    <title>Lista de Recomendações - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-
-
 </head>
 <body>
-<div th:insert="fragments/header :: header"></div>
 
-<h1>Recomendações do Usuário</h1>
+<!-- Inclui o fragmento do Header com sintaxe atualizada -->
+<div th:insert="~{fragments/header :: header}"></div>
 
-<a th:href="@{/recomendacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Recomendação</a>
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Recomendações do Usuário</h1>
 
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Mensagem</th>
-        <th>Data/Hora</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="recomendacao : ${recomendacoes.content}">
-        <td th:text="${recomendacao.id}"></td>
-        <td th:text="${recomendacao.mensagem}"></td>
-        <td th:text="${recomendacao.dataHora != null ? #temporals.format(recomendacao.dataHora, 'dd/MM/yyyy HH:mm') : 'N/A'}"></td>
-    </tr>
-    </tbody>
-</table>
+    <a th:href="@{/recomendacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}" class="btn btn-primary">Nova Recomendação</a>
 
-<div>
-    <span th:text="'Página ' + (${recomendacoes.number} + 1) + ' de ' + ${recomendacoes.totalPages}"></span>
-    <div>
+    <!-- Mensagens de Sucesso -->
+    <div th:if="${sucesso}" class="alert alert-success">
+        <p th:text="${sucesso}"></p>
+    </div>
+    <!-- Mensagens de Erro -->
+    <div th:if="${erro}" class="alert alert-danger">
+        <p th:text="${erro}"></p>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Mensagem</th>
+            <th>Data/Hora</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="recomendacao : ${recomendacoes.content}">
+            <td th:text="${recomendacao.id}"></td>
+            <td th:text="${recomendacao.mensagem}"></td>
+            <td th:text="${recomendacao.dataHora != null ? #temporals.format(recomendacao.dataHora, 'dd/MM/yyyy HH:mm') : 'N/A'}"></td>
+            <td>
+                <a th:href="@{/recomendacoes/{id}(id=${recomendacao.id})}" class="btn btn-outline-primary">Ver</a>
+                <a   th:href="@{/recomendacoes/{id}/editar(id=${recomendacao.id})}" class="btn btn-outline-secondary">Editar</a>
+                <a th:href="@{/recomendacoes/{id}/excluir(id=${recomendacao.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir esta recomendação?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Paginação -->
+    <div class="pagination">
+        <span th:text="'Página ' + (${recomendacoes.number} + 1) + ' de ' + ${recomendacoes.totalPages}"></span>
         <ul>
             <li th:if="${recomendacoes.hasPrevious()}">
                 <a th:href="@{/recomendacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${recomendacoes.number - 1})}">Anterior</a>
@@ -48,7 +69,9 @@
         </ul>
     </div>
 </div>
-<div th:insert="fragments/footer :: footer"></div>
+
+<!-- Inclui o fragmento do Footer com sintaxe atualizada -->
+<div th:insert="~{fragments/footer :: footer}"></div>
 
 </body>
 </html>

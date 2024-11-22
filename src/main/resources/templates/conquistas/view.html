@@ -14,7 +14,7 @@
     <p><strong>ID:</strong> <span th:text="${conquista.id}"></span></p>
     <p><strong>Título:</strong> <span th:text="${conquista.titulo}"></span></p>
     <p><strong>Descrição:</strong> <span th:text="${conquista.descricao}"></span></p>
-    <p><strong>Data da Conquista:</strong> <span th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy HH:mm')}"></span></p>
+    <p><strong>Data da Conquista:</strong> <span th:text="${#temporals.format(conquista.dataConquista, 'dd/MM/yyyy')}"></span></p>
     <p><strong>ID do Usuário:</strong> <span th:text="${conquista.usuarioId}"></span></p>
 </div>
 

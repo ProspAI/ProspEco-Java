@@ -1,49 +1,55 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Lista de Metas</title>
+  <meta charset="UTF-8">
+  <title>Lista de Metas - Prospeco</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
 <div th:insert="fragments/header :: header"></div>
 
-<h1>Metas do Usuário</h1>
+<!-- Conteúdo principal -->
+<div class="content">
+  <h1>Metas do Usuário</h1>
 
-<a th:href="@{/metas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Meta</a>
+  <a th:href="@{/metas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}" class="btn btn-primary">Nova Meta</a>
 
-<table>
-  <thead>
-  <tr>
-    <th>ID</th>
-    <th>Consumo Alvo (kWh)</th>
-    <th>Data Início</th>
-    <th>Data Fim</th>
-    <th>Atingida</th>
-    <th>Ações</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr th:each="meta : ${metas.content}">
-    <td th:text="${meta.id}"></td>
-    <td th:text="${meta.consumoAlvo}"></td>
-    <td th:text="${#dates.format(meta.dataInicio, 'dd/MM/yyyy')}"></td>
-    <td th:text="${#dates.format(meta.dataFim, 'dd/MM/yyyy')}"></td>
-    <td th:text="${meta.atingida ? 'Sim' : 'Não'}"></td>
-    <td>
-      <a th:href="@{/metas/{id}(id=${meta.id})}">Ver</a>
-      <a th:href="@{/metas/{id}/editar(id=${meta.id})}">Editar</a>
-      <a th:href="@{/metas/{id}/excluir(id=${meta.id})}">Excluir</a>
-      <a th:if="${!meta.atingida}" th:href="@{/metas/{id}/atingida(id=${meta.id})}">Marcar como Atingida</a>
-    </td>
-  </tr>
-  </tbody>
-</table>
+  <table>
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Consumo Alvo (kWh)</th>
+      <th>Data Início</th>
+      <th>Data Fim</th>
+      <th>Atingida</th>
+      <th>Ações</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="meta : ${metas.content}">
+      <td th:text="${meta.id}"></td>
+      <td th:text="${meta.consumoAlvo}"></td>
+      <td th:text="${#temporals.format(meta.dataInicio, 'dd/MM/yyyy')}"></td>
+      <td th:text="${#temporals.format(meta.dataFim, 'dd/MM/yyyy')}"></td>
+      <td th:text="${meta.atingida ? 'Sim' : 'Não'}"></td>
+      <td>
+        <a th:href="@{/metas/{id}(id=${meta.id})}" class="btn btn-outline-primary">Ver</a>
+        <a th:href="@{/metas/{id}/editar(id=${meta.id})}" class="btn btn-outline-secondary">Editar</a>
+        <a th:href="@{/metas/{id}/excluir(id=${meta.id})}"
+           class="btn btn-outline-danger"
+           onclick="return confirm('Tem certeza que deseja excluir esta meta?');">Excluir</a>
+        <a th:if="${!meta.atingida}" th:href="@{/metas/{id}/atingida(id=${meta.id})}" class="btn btn-success">Marcar como Atingida</a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
 
-<!-- Pagination -->
-<div>
-  <span th:text="'Página ' + ${metas.number + 1} + ' de ' + ${metas.totalPages}"></span>
-  <div>
+  <!-- Paginação -->
+  <div class="pagination">
+    <span th:text="'Página ' + (${metas.number} + 1) + ' de ' + ${metas.totalPages}"></span>
     <ul>
       <li th:if="${metas.hasPrevious()}">
         <a th:href="@{/metas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${metas.number - 1})}">Anterior</a>
@@ -59,6 +65,8 @@
     </ul>
   </div>
 </div>
+
+<!-- Inclui o fragmento do Footer -->
 <div th:insert="fragments/footer :: footer"></div>
 
 </body>

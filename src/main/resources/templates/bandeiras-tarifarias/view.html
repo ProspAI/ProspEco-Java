@@ -3,7 +3,6 @@
 <head>
     <title>Detalhes da Bandeira Tarifária</title>
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
 <div th:insert="fragments/header :: header"></div>
@@ -13,13 +12,12 @@
 <div>
     <p><strong>ID:</strong> <span th:text="${bandeira.id}"></span></p>
     <p><strong>Tipo de Bandeira:</strong> <span th:text="${bandeira.tipoBandeira}"></span></p>
-    <p><strong>Data de Vigência:</strong> <span th:text="${#dates.format(bandeira.dataVigencia, 'dd/MM/yyyy')}"></span></p>
+    <p><strong>Data de Vigência:</strong> <span th:text="${#temporals.format(bandeira.dataVigencia, 'dd/MM/yyyy')}"></span></p>
 </div>
 
 <a th:href="@{/bandeiras-tarifarias/{id}/editar(id=${bandeira.id})}">Editar</a>
 <a th:href="@{/bandeiras-tarifarias/{id}/excluir(id=${bandeira.id})}">Excluir</a>
 <a th:href="@{/bandeiras-tarifarias}">Voltar</a>
 <div th:insert="fragments/footer :: footer"></div>
-
 </body>
 </html>

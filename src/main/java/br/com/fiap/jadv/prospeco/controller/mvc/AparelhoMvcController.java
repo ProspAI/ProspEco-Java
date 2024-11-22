@@ -5,6 +5,7 @@ import br.com.fiap.jadv.prospeco.dto.response.AparelhoResponseDTO;
 import br.com.fiap.jadv.prospeco.exception.ResourceNotFoundException;
 import br.com.fiap.jadv.prospeco.service.AparelhoService;
 import br.com.fiap.jadv.prospeco.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/aparelhos")
@@ -56,8 +58,17 @@ public class AparelhoMvcController {
     }
 
     @PostMapping("/usuario/{usuarioId}")
-    public String criarAparelho(@PathVariable Long usuarioId, @ModelAttribute AparelhoRequestDTO aparelhoRequestDTO) {
-        aparelhoService.criarAparelho(aparelhoRequestDTO, usuarioId);
+    public String criarAparelho(
+            @PathVariable Long usuarioId,
+            @ModelAttribute @Valid AparelhoRequestDTO aparelhoRequestDTO,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            aparelhoService.criarAparelho(aparelhoRequestDTO, usuarioId);
+            redirectAttributes.addFlashAttribute("sucesso", "Aparelho criado com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", "Erro ao criar o aparelho: " + e.getMessage());
+        }
         return "redirect:/aparelhos/usuario/" + usuarioId;
     }
 
@@ -78,17 +89,39 @@ public class AparelhoMvcController {
     }
 
     @PostMapping("/{id}")
-    public String atualizarAparelho(@PathVariable Long id, @ModelAttribute AparelhoRequestDTO aparelhoRequestDTO) {
-        aparelhoService.atualizarAparelho(id, aparelhoRequestDTO);
+    public String atualizarAparelho(
+            @PathVariable Long id,
+            @ModelAttribute @Valid AparelhoRequestDTO aparelhoRequestDTO,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            aparelhoService.atualizarAparelho(id, aparelhoRequestDTO);
+            redirectAttributes.addFlashAttribute("sucesso", "Aparelho atualizado com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", "Erro ao atualizar o aparelho: " + e.getMessage());
+        }
         return "redirect:/aparelhos/" + id;
     }
 
     @GetMapping("/{id}/excluir")
-    public String excluirAparelho(@PathVariable Long id) {
-        AparelhoResponseDTO aparelho = aparelhoService.buscarAparelhoPorId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Aparelho não encontrado"));
-        Long usuarioId = aparelho.getUsuarioId();
-        aparelhoService.excluirAparelho(id);
-        return "redirect:/aparelhos/usuario/" + usuarioId;
+    public String excluirAparelho(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            AparelhoResponseDTO aparelho = aparelhoService.buscarAparelhoPorId(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Aparelho não encontrado"));
+            Long usuarioId = aparelho.getUsuarioId();
+            aparelhoService.excluirAparelho(id);
+            redirectAttributes.addFlashAttribute("sucesso", "Aparelho excluído com sucesso!");
+            return "redirect:/aparelhos/usuario/" + usuarioId;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", "Erro ao excluir o aparelho: " + e.getMessage());
+            return "redirect:/aparelhos";
+        }
+    }
+
+    // Tratamento global de exceções para ResourceNotFoundException
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public String handleResourceNotFoundException(ResourceNotFoundException ex, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("erro", ex.getMessage());
+        return "redirect:/aparelhos";
     }
 }

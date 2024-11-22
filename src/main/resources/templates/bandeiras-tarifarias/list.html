@@ -1,40 +1,53 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Bandeiras Tarifárias</title>
+    <meta charset="UTF-8">
+    <title>Lista de Bandeiras Tarifárias - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
-<div th:insert="fragments/header :: header"></div>
 
-<h1>Bandeiras Tarifárias</h1>
+<!-- Inclui o fragmento do Header com sintaxe atualizada -->
+<div th:insert="~{fragments/header :: header}"></div>
 
-<a th:href="@{/bandeiras-tarifarias/nova}">Nova Bandeira Tarifária</a>
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Bandeiras Tarifárias</h1>
 
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Tipo de Bandeira</th>
-        <th>Data de Vigência</th>
-        <th>Ações</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="bandeira : ${bandeiras}">
-        <td th:text="${bandeira.id}"></td>
-        <td th:text="${bandeira.tipoBandeira}"></td>
-        <td th:text="${bandeira.dataVigencia.format(@dateFormatter)}"></td>
-        <td>
-            <a th:href="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}">Ver</a>
-            <a th:href="@{/bandeiras-tarifarias/{id}/editar(id=${bandeira.id})}">Editar</a>
-            <a th:href="@{/bandeiras-tarifarias/{id}/excluir(id=${bandeira.id})}">Excluir</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
-<div th:insert="fragments/footer :: footer"></div>
+    <a th:href="@{/bandeiras-tarifarias/nova}" class="btn btn-primary">Nova Bandeira Tarifária</a>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tipo de Bandeira</th>
+            <th>Data de Vigência</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="bandeira : ${bandeiras}">
+            <td th:text="${bandeira.id}"></td>
+            <td th:text="${bandeira.tipoBandeira}"></td>
+            <!-- Usa #temporals.format para formatar LocalDate -->
+            <td th:text="${#temporals.format(bandeira.dataVigencia, 'dd/MM/yyyy')}"></td>
+            <td>
+                <a th:href="@{/bandeiras-tarifarias/{id}(id=${bandeira.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:href="@{/bandeiras-tarifarias/{id}/editar(id=${bandeira.id})}" class="btn btn-outline-secondary">Editar</a>
+                <a th:href="@{/bandeiras-tarifarias/{id}/excluir(id=${bandeira.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir esta bandeira tarifária?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Opcional: Adicionar Paginação se necessário -->
+</div>
+
+<!-- Inclui o fragmento do Footer com sintaxe atualizada -->
+<div th:insert="~{fragments/footer :: footer}"></div>
 
 </body>
 </html>

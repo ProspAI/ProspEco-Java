@@ -1,17 +1,21 @@
-<!-- src/main/resources/templates/aparelhos/list.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Aparelhos</title>
+    <meta charset="UTF-8">
+    <title>Lista de Aparelhos - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
+<body>
 
-<div th:fragment="body">
+<!-- Inclui o fragmento do Header -->
+<div th:insert="fragments/header :: header"></div>
 
-    <div th:insert="fragments/header :: header"></div>
+<!-- Conteúdo principal -->
+<div class="content">
     <h1>Lista de Aparelhos</h1>
 
-    <a th:href="@{/aparelhos/novo}" class="button">Novo Aparelho</a>
+    <a th:href="@{/aparelhos/novo}" class="btn btn-primary">Novo Aparelho</a>
 
     <table>
         <thead>
@@ -32,13 +36,11 @@
             <td th:text="${aparelho.tipo}"></td>
             <td th:text="${aparelho.descricao}"></td>
             <td>
-                <a th:href="@{/aparelhos/{id}(id=${aparelho.id})}" class="button">Ver</a>
-                <a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}" class="button">Editar</a>
+                <a th:href="@{/aparelhos/{id}(id=${aparelho.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:href="@{/aparelhos/{id}/editar(id=${aparelho.id})}" class="btn btn-outline-secondary">Editar</a>
                 <a th:href="@{/aparelhos/{id}/excluir(id=${aparelho.id})}"
-                   class="button"
-                   onclick="return confirm('Tem certeza que deseja excluir este aparelho?');">
-                    Excluir
-                </a>
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir este aparelho?');">Excluir</a>
             </td>
         </tr>
         </tbody>
@@ -49,19 +51,22 @@
         <span th:text="'Página ' + (${aparelhos.number} + 1) + ' de ' + ${aparelhos.totalPages}"></span>
         <ul>
             <li th:if="${aparelhos.hasPrevious()}">
-                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number - 1})}">Anterior</a>
+                <a th:href="@{/aparelhos?page=${aparelhos.number - 1}}">Anterior</a>
             </li>
             <li th:each="i : ${#numbers.sequence(1, aparelhos.totalPages)}">
-                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${i - 1})}"
+                <a th:href="@{/aparelhos?page=${i - 1}}"
                    th:text="${i}"
                    th:classappend="${aparelhos.number + 1 == i} ? 'current'"></a>
             </li>
             <li th:if="${aparelhos.hasNext()}">
-                <a th:href="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${aparelhos.number + 1})}">Próximo</a>
+                <a th:href="@{/aparelhos?page=${aparelhos.number + 1}}">Próximo</a>
             </li>
-
         </ul>
-        <div th:insert="fragments/footer :: footer"></div>
     </div>
 </div>
+
+<!-- Inclui o fragmento do Footer -->
+<div th:insert="fragments/footer :: footer"></div>
+
+</body>
 </html>

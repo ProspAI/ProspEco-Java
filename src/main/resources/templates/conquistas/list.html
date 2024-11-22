@@ -1,46 +1,52 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Conquistas</title>
+    <meta charset="UTF-8">
+    <title>Lista de Conquistas - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
 <div th:insert="fragments/header :: header"></div>
 
-<h1>Conquistas do Usuário</h1>
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Conquistas do Usuário</h1>
 
-<a th:href="@{/conquistas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Conquista</a>
+    <a th:href="@{/conquistas/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}" class="btn btn-primary">Nova Conquista</a>
 
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Título</th>
-        <th>Descrição</th>
-        <th>Data</th>
-        <th>Ações</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="conquista : ${conquistas.content}">
-        <td th:text="${conquista.id}"></td>
-        <td th:text="${conquista.titulo}"></td>
-        <td th:text="${conquista.descricao}"></td>
-        <td th:text="${#dates.format(conquista.dataConquista, 'dd/MM/yyyy')}"></td>
-        <td>
-            <a th:href="@{/conquistas/{id}(id=${conquista.id})}">Ver</a>
-            <a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}">Editar</a>
-            <a th:href="@{/conquistas/{id}/excluir(id=${conquista.id})}">Excluir</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Descrição</th>
+            <th>Data</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="conquista : ${conquistas.content}">
+            <td th:text="${conquista.id}"></td>
+            <td th:text="${conquista.titulo}"></td>
+            <td th:text="${conquista.descricao}"></td>
+            <td th:text="${#temporals.format(conquista.dataConquista, 'dd/MM/yyyy')}"></td>
+            <td>
+                <a th:href="@{/conquistas/{id}(id=${conquista.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:href="@{/conquistas/{id}/editar(id=${conquista.id})}" class="btn btn-outline-secondary">Editar</a>
+                <a th:href="@{/conquistas/{id}/excluir(id=${conquista.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir esta conquista?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-<!-- Pagination -->
-<div>
-    <span th:text="'Página ' + ${conquistas.number + 1} + ' de ' + ${conquistas.totalPages}"></span>
-    <div>
+    <!-- Paginação -->
+    <div class="pagination">
+        <span th:text="'Página ' + (${conquistas.number} + 1) + ' de ' + ${conquistas.totalPages}"></span>
         <ul>
             <li th:if="${conquistas.hasPrevious()}">
                 <a th:href="@{/conquistas/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${conquistas.number - 1})}">Anterior</a>
@@ -56,6 +62,8 @@
         </ul>
     </div>
 </div>
+
+<!-- Inclui o fragmento do Footer -->
 <div th:insert="fragments/footer :: footer"></div>
 
 </body>

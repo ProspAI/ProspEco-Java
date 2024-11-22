@@ -1,46 +1,52 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Notificações</title>
+    <meta charset="UTF-8">
+    <title>Lista de Notificações - Prospeco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
+
+<!-- Inclui o fragmento do Header -->
 <div th:insert="fragments/header :: header"></div>
 
-<h1>Notificações do Usuário</h1>
+<!-- Conteúdo principal -->
+<div class="content">
+    <h1>Notificações do Usuário</h1>
 
-<a th:href="@{/notificacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}">Nova Notificação</a>
+    <a th:href="@{/notificacoes/usuario/{usuarioId}/nova(usuarioId=${usuarioId})}" class="btn btn-primary">Nova Notificação</a>
 
-<table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Mensagem</th>
-        <th>Data/Hora</th>
-        <th>Lida</th>
-        <th>Ações</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="notificacao : ${notificacoes.content}">
-        <td th:text="${notificacao.id}"></td>
-        <td th:text="${notificacao.mensagem}"></td>
-        <td th:text="${#dates.format(notificacao.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
-        <td th:text="${notificacao.lida ? 'Sim' : 'Não'}"></td>
-        <td>
-            <a th:href="@{/notificacoes/{id}(id=${notificacao.id})}">Ver</a>
-            <a th:if="${!notificacao.lida}" th:href="@{/notificacoes/{id}/lida(id=${notificacao.id})}">Marcar como Lida</a>
-            <a th:href="@{/notificacoes/{id}/excluir(id=${notificacao.id})}">Excluir</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Mensagem</th>
+            <th>Data/Hora</th>
+            <th>Lida</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="notificacao : ${notificacoes.content}">
+            <td th:text="${notificacao.id}"></td>
+            <td th:text="${notificacao.mensagem}"></td>
+            <td th:text="${#temporals.format(notificacao.dataHora, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${notificacao.lida ? 'Sim' : 'Não'}"></td>
+            <td>
+                <a th:href="@{/notificacoes/{id}(id=${notificacao.id})}" class="btn btn-outline-primary">Ver</a>
+                <a th:if="${!notificacao.lida}" th:href="@{/notificacoes/{id}/lida(id=${notificacao.id})}" class="btn btn-success">Marcar como Lida</a>
+                <a th:href="@{/notificacoes/{id}/excluir(id=${notificacao.id})}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Tem certeza que deseja excluir esta notificação?');">Excluir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-<!-- Paginação -->
-<div>
-    <span th:text="'Página ' + ${notificacoes.number + 1} + ' de ' + ${notificacoes.totalPages}"></span>
-    <div>
+    <!-- Paginação -->
+    <div class="pagination">
+        <span th:text="'Página ' + (${notificacoes.number} + 1) + ' de ' + ${notificacoes.totalPages}"></span>
         <ul>
             <li th:if="${notificacoes.hasPrevious()}">
                 <a th:href="@{/notificacoes/usuario/{usuarioId}(usuarioId=${usuarioId}, page=${notificacoes.number - 1})}">Anterior</a>
@@ -56,6 +62,8 @@
         </ul>
     </div>
 </div>
+
+<!-- Inclui o fragmento do Footer -->
 <div th:insert="fragments/footer :: footer"></div>
 
 </body>

@@ -1,40 +1,53 @@
-<!-- src/main/resources/templates/aparelhos/create.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Criar Aparelho</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
-
+<body>
 <div th:fragment="body">
     <h1>Criar Novo Aparelho</h1>
 
-    <form th:action="@{/aparelhos}" th:object="${aparelho}" method="post">
+    <!-- Formulário para criação do aparelho -->
+    <form th:action="@{/aparelhos/usuario/{usuarioId}(usuarioId=${usuarioId})}" th:object="${aparelho}" method="post">
+        <!-- Nome -->
         <div>
             <label for="nome">Nome:</label>
             <input type="text" id="nome" th:field="*{nome}" />
             <div th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}" class="error"></div>
         </div>
+
+        <!-- Potência -->
         <div>
             <label for="potencia">Potência:</label>
             <input type="number" step="0.01" id="potencia" th:field="*{potencia}" />
             <div th:if="${#fields.hasErrors('potencia')}" th:errors="*{potencia}" class="error"></div>
         </div>
+
+        <!-- Tipo -->
         <div>
             <label for="tipo">Tipo:</label>
             <input type="text" id="tipo" th:field="*{tipo}" />
             <div th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}" class="error"></div>
         </div>
+
+        <!-- Descrição -->
         <div>
             <label for="descricao">Descrição:</label>
             <textarea id="descricao" th:field="*{descricao}"></textarea>
             <div th:if="${#fields.hasErrors('descricao')}" th:errors="*{descricao}" class="error"></div>
         </div>
+
+
+        <!-- Botão Salvar -->
         <button type="submit">Salvar</button>
     </form>
 
+    <!-- Botão Voltar -->
     <a th:href="@{/aparelhos}" class="button">Voltar</a>
-    <!-- Inclui o fragmento do Footer -->
-    <div th:insert="fragments/footer :: footer"></div>
 </div>
 
+<!-- Inclui o rodapé -->
+<div th:insert="fragments/footer :: footer"></div>
+</body>
 </html>

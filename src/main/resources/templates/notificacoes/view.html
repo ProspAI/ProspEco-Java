@@ -13,7 +13,7 @@
 <div>
     <p><strong>ID:</strong> <span th:text="${notificacao.id}"></span></p>
     <p><strong>Mensagem:</strong> <span th:text="${notificacao.mensagem}"></span></p>
-    <p><strong>Data/Hora:</strong> <span th:text="${#dates.format(notificacao.dataHora, 'dd/MM/yyyy HH:mm')}"></span></p>
+    <p><strong>Data/Hora:</strong> <span th:text="${#temporals.format(notificacao.dataHora, 'dd/MM/yyyy HH:mm')}"></span></p>
     <p><strong>Lida:</strong> <span th:text="${notificacao.lida ? 'Sim' : 'Não'}"></span></p>
     <p><strong>ID do Usuário:</strong> <span th:text="${notificacao.usuarioId}"></span></p>
 </div>
