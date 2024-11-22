@@ -30,9 +30,8 @@ O projeto visa não apenas otimizar o consumo energético, mas também engajar o
 ### Funcionalidades Adicionadas na Sprint Atual
 1. **Autenticação Segura:** Utilização de **JWT** para controle de acesso e autenticação.  
 2. **Mensageria Kafka:** Processamento assíncrono para notificações e atualização de dados.  
-3. **Internacionalização (i18n):** Suporte a múltiplos idiomas para atender diferentes públicos.  
-4. **Monitoramento Avançado:** Integração com **Spring Boot Actuator** para métricas detalhadas e monitoramento da saúde do sistema.  
-5. **Geração de Insights Personalizados:** Uso de **Spring AI** para gerar recomendações específicas baseadas no padrão de consumo do usuário.  
+3. **Monitoramento Avançado:** Integração com **Spring Boot Actuator** para métricas detalhadas e monitoramento da saúde do sistema.  
+4. **Geração de Insights Personalizados:** Uso de **Spring AI** para gerar recomendações específicas baseadas no padrão de consumo do usuário.  
 
 ---
 
