@@ -213,7 +213,7 @@ A arquitetura do **ProspEco API** segue um modelo multicamadas, promovendo organ
 
 ## Links de Vídeos
 
-1. **Pitch do Projeto:** [Pitch - ProspEco API](#) *(Adicione o link aqui)*  
+1. **Pitch do Projeto:** [Pitch - ProspEco API](https://youtu.be/F9hq-PmF39s)
 2. **Demonstração do Sistema:** [Demonstração - ProspEco API](#) *(Adicione o link aqui)*  
 
 ---
